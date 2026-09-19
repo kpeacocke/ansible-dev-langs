@@ -1,0 +1,22 @@
+---
+# Languages this playbook currently knows how to install.
+# Add a new name here plus roles/dev_languages/tasks/<name>/*.yml to extend.
+supported_languages:
+  - python
+
+default_python_version: latest
+default_pip_version: latest
+default_pipx_version: latest
+
+# Default selection when no -e override is supplied. Override entirely with:
+#   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'
+# or select via a simpler comma list with the helper var below.
+dev_languages:
+  - name: python
+    version: "{{ default_python_version }}"
+    pip_version: "{{ default_pip_version }}"
+    pipx_version: "{{ default_pipx_version }}"
+    # Add venv definitions here when environments should be created.
+    # venvs:
+    #   - path: "{{ ansible_env.HOME }}/.venvs/project"
+    #     system_site_packages: false

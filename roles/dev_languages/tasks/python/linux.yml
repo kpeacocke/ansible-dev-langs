@@ -1,0 +1,75 @@
+---
+# pyenv builds CPython from source, so this works unmodified on both x86_64
+# and arm64/aarch64 as long as a compiler toolchain is present.
+
+- name: Install build dependencies for Python via pyenv
+  ansible.builtin.package:
+    name: "{{ python_build_dependencies }}"
+    state: present
+  become: true
+  when: python_build_dependencies | default([]) | length > 0
+
+- name: Ensure pyenv root directory exists
+  ansible.builtin.file:
+    path: "{{ pyenv_root }}"
+    state: directory
+    mode: "0755"
+
+- name: Check whether pyenv is already installed
+  ansible.builtin.stat:
+    path: "{{ pyenv_root }}/bin/pyenv"
+  register: pyenv_bin
+
+- name: Clone pyenv
+  ansible.builtin.git:
+    repo: https://github.com/pyenv/pyenv.git
+    dest: "{{ pyenv_root }}"
+    version: master
+    depth: 1
+  when: not pyenv_bin.stat.exists
+
+- name: Check whether the requested Python version is already built
+  ansible.builtin.stat:
+    path: "{{ pyenv_root }}/versions/{{ python_target_version }}/bin/python3"
+  register: pyenv_python_version
+
+- name: Build and install Python {{ python_target_version }} via pyenv
+  ansible.builtin.command: "{{ pyenv_root }}/bin/pyenv install {{ python_target_version }}"
+  environment:
+    PYENV_ROOT: "{{ pyenv_root }}"
+  when: not pyenv_python_version.stat.exists
+  changed_when: true
+
+- name: Configure pyenv shims and init in shell profiles
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_env.HOME }}/{{ item }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - pyenv"
+    create: true
+    mode: "0644"
+    block: |
+      export PYENV_ROOT="{{ pyenv_root }}"
+      export PATH="$PYENV_ROOT/bin:$PATH"
+      eval "$(pyenv init -)"
+  loop:
+    - .bashrc
+    - .profile
+    - .zshrc
+
+- name: Read current pyenv global version
+  ansible.builtin.slurp:
+    src: "{{ pyenv_root }}/version"
+  register: pyenv_current_global
+  failed_when: false
+
+- name: Set Python {{ python_target_version }} as the active pyenv global version
+  ansible.builtin.command: "{{ pyenv_root }}/bin/pyenv global {{ python_target_version }}"
+  environment:
+    PYENV_ROOT: "{{ pyenv_root }}"
+  when: >-
+    not pyenv_current_global.content is defined or
+    (pyenv_current_global.content | b64decode | trim) != python_target_version
+  changed_when: true
+
+- name: Set the Python executable for package tools
+  ansible.builtin.set_fact:
+    python_executable: "{{ pyenv_root }}/versions/{{ python_target_version }}/bin/python"

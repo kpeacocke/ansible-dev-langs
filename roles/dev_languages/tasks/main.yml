@@ -1,0 +1,28 @@
+---
+- name: Validate requested languages are supported
+  ansible.builtin.assert:
+    that: "item.name in supported_languages"
+    fail_msg: "Unsupported language '{{ item.name }}'. Supported languages: {{ supported_languages | join(', ') }}"
+    quiet: true
+  loop: "{{ dev_languages }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Load per-distribution build dependency variables
+  ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files:
+        - "{{ ansible_distribution | lower }}.yml"
+        - "{{ ansible_os_family | lower }}.yml"
+        - "default.yml"
+      paths:
+        - "{{ role_path }}/vars"
+  when: ansible_system == 'Linux'
+
+- name: Install each requested development language
+  ansible.builtin.include_tasks: "{{ dev_language.name }}/main.yml"
+  loop: "{{ dev_languages }}"
+  loop_control:
+    loop_var: dev_language
+    label: "{{ dev_language.name }} {{ dev_language.version | default('default') }}"

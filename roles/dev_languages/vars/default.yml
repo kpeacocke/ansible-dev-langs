@@ -1,0 +1,6 @@
+---
+# Fallback used when no distribution- or family-specific vars file matches.
+# Left empty rather than failing so the play can still proceed; package
+# install will simply be skipped (task is conditioned on this being defined
+# and non-empty is not required, but review manually on unrecognised distros).
+python_build_dependencies: []

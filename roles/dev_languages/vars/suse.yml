@@ -1,0 +1,14 @@
+---
+python_build_dependencies:
+  - gcc
+  - make
+  - zlib-devel
+  - libbz2-devel
+  - libopenssl-devel
+  - readline-devel
+  - sqlite3-devel
+  - tk-devel
+  - libffi-devel
+  - xz-devel
+  - git
+  - curl

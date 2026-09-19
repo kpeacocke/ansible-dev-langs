@@ -1,0 +1,13 @@
+---
+python_build_dependencies:
+  - base-devel
+  - openssl
+  - zlib
+  - bzip2
+  - readline
+  - sqlite
+  - tk
+  - libffi
+  - xz
+  - git
+  - curl

@@ -1,0 +1,18 @@
+---
+- name: Set effective pip version
+  ansible.builtin.set_fact:
+    pip_target_version: "{{ dev_language.pip_version }}"
+
+- name: Install pip {{ pip_target_version }}
+  ansible.builtin.command:
+    argv:
+      - "{{ python_executable }}"
+      - -m
+      - pip
+      - install
+      - --upgrade
+      - "{{ 'pip' if pip_target_version == 'latest' else 'pip==' ~ pip_target_version }}"
+  register: pip_install
+  changed_when: >-
+    'Successfully installed' in pip_install.stdout or
+    'Successfully uninstalled' in pip_install.stdout

@@ -1,0 +1,23 @@
+---
+- name: Validate virtual environment path
+  ansible.builtin.assert:
+    that:
+      - python_venv.path is defined
+      - python_venv.path | length > 0
+    fail_msg: "Each Python virtual environment requires a non-empty path."
+
+- name: Determine virtual environment interpreter path
+  ansible.builtin.set_fact:
+    python_venv_executable: >-
+      {{ python_venv.path + ('\\Scripts\\python.exe'
+         if ansible_system == 'Windows' else '/bin/python') }}
+
+- name: Create virtual environment at {{ python_venv.path }}
+  ansible.builtin.command:
+    argv: >-
+      {{ [python_executable, '-m', 'venv']
+         + (['--system-site-packages']
+            if python_venv.system_site_packages | default(false) else [])
+         + [python_venv.path] }}
+    creates: "{{ python_venv_executable }}"
+  changed_when: true

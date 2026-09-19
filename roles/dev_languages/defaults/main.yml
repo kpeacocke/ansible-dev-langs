@@ -1,0 +1,17 @@
+---
+# Root install directory for pyenv on Linux/macOS (per-user, no sudo required
+# for the pyenv tool itself; build dependencies are installed with become).
+pyenv_root: "{{ ansible_env.HOME }}/.pyenv"
+
+# Homebrew formulas needed to build CPython from source on macOS.
+macos_build_dependencies:
+  - openssl@3
+  - readline
+  - sqlite3
+  - xz
+  - zlib
+  - tcl-tk
+
+# Base directory Windows installs are placed under, one folder per version,
+# so multiple Python versions can coexist side by side.
+windows_install_root: "C:\\DevLangs"

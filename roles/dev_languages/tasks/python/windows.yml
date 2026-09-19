@@ -1,0 +1,47 @@
+---
+# Uses the official python.org installer so a specific version can be pinned
+# precisely and installed side-by-side with other versions, on both amd64
+# and arm64 Windows.
+
+- name: Determine python.org installer architecture suffix
+  ansible.builtin.set_fact:
+    python_windows_arch: "{{ 'arm64' if ansible_architecture == 'ARM64' else 'amd64' }}"
+
+- name: Determine per-version install directory
+  ansible.builtin.set_fact:
+    python_install_dir: "{{ windows_install_root }}\\Python\\{{ python_target_version }}"
+
+- name: Check whether the requested Python version is already installed
+  ansible.windows.win_stat:
+    path: "{{ python_install_dir }}\\python.exe"
+  register: win_python_check
+
+- name: Download Python {{ python_target_version }} installer
+  ansible.windows.win_get_url:
+    url: "https://www.python.org/ftp/python/{{ python_target_version }}/python-{{ python_target_version }}-{{ python_windows_arch }}.exe"
+    dest: "C:\\Windows\\Temp\\python-{{ python_target_version }}-{{ python_windows_arch }}.exe"
+  when: not win_python_check.stat.exists
+
+- name: Silently install Python {{ python_target_version }}
+  ansible.windows.win_package:
+    path: "C:\\Windows\\Temp\\python-{{ python_target_version }}-{{ python_windows_arch }}.exe"
+    arguments:
+      - "/quiet"
+      - "InstallAllUsers=1"
+      - "TargetDir={{ python_install_dir }}"
+      - "PrependPath=0"
+      - "Include_test=0"
+    state: present
+  when: not win_python_check.stat.exists
+
+- name: Add Python install and Scripts directories to the machine PATH
+  ansible.windows.win_path:
+    elements:
+      - "{{ python_install_dir }}"
+      - "{{ python_install_dir }}\\Scripts"
+    scope: machine
+    state: present
+
+- name: Set the Python executable for package tools
+  ansible.builtin.set_fact:
+    python_executable: "{{ python_install_dir }}\\python.exe"

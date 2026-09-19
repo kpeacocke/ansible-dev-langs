@@ -1,0 +1,6 @@
+---
+- name: Install and configure development language toolchains
+  hosts: all
+  gather_facts: true
+  roles:
+    - role: dev_languages

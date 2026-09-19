@@ -1,0 +1,18 @@
+---
+- name: Set effective pipx version
+  ansible.builtin.set_fact:
+    pipx_target_version: "{{ dev_language.pipx_version }}"
+
+- name: Install pipx {{ pipx_target_version }}
+  ansible.builtin.command:
+    argv:
+      - "{{ python_executable }}"
+      - -m
+      - pip
+      - install
+      - --upgrade
+      - "{{ 'pipx' if pipx_target_version == 'latest' else 'pipx==' ~ pipx_target_version }}"
+  register: pipx_install
+  changed_when: >-
+    'Successfully installed' in pipx_install.stdout or
+    'Successfully uninstalled' in pipx_install.stdout
