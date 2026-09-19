@@ -52,3 +52,7 @@ dev_languages:
     # venvs:
     #   - path: "{{ ansible_env.HOME }}/.venvs/project"
     #     system_site_packages: false
+  - name: java
+    version: "{{ default_java_version }}"
+    distribution: "{{ default_java_distribution }}"
+    default: true
