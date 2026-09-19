@@ -1,0 +1,28 @@
+---
+- name: Install PowerShell tools on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - "{{ powershell_install_dir }}/pwsh"
+      - -NoProfile
+      - -Command
+      - "Install-Module -Name {{ powershell_tool }} -Scope CurrentUser -Force -AllowClobber"
+  loop: "{{ dev_language.tools | default(default_powershell_tools) }}"
+  loop_control:
+    loop_var: powershell_tool
+    label: "{{ powershell_tool }}"
+  when: ansible_system in ['Linux', 'Darwin']
+  changed_when: true
+
+- name: Install PowerShell tools on Windows
+  ansible.windows.win_command:
+    argv:
+      - "{{ powershell_install_dir }}\\pwsh.exe"
+      - -NoProfile
+      - -Command
+      - "Install-Module -Name {{ powershell_tool }} -Scope AllUsers -Force -AllowClobber"
+  loop: "{{ dev_language.tools | default(default_powershell_tools) }}"
+  loop_control:
+    loop_var: powershell_tool
+    label: "{{ powershell_tool }}"
+  when: ansible_system == 'Windows'
+  changed_when: true

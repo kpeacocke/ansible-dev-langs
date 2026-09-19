@@ -1,0 +1,50 @@
+---
+- name: Set Unix PowerShell installation paths
+  ansible.builtin.set_fact:
+    powershell_install_dir: "{{ powershell_root }}/{{ powershell_target_version }}"
+    powershell_archive: "/tmp/powershell-{{ powershell_target_version }}.{{ powershell_platform }}-{{ powershell_architecture }}.{{ powershell_archive_extension }}"
+
+- name: Check whether this PowerShell version is installed
+  ansible.builtin.stat:
+    path: "{{ powershell_install_dir }}/pwsh"
+  register: powershell_check
+
+- name: Download PowerShell archive
+  ansible.builtin.get_url:
+    url: "https://github.com/PowerShell/PowerShell/releases/download/v{{ powershell_target_version }}/powershell-{{ powershell_target_version }}-{{ powershell_platform }}-{{ powershell_architecture }}.{{ powershell_archive_extension }}"
+    dest: "{{ powershell_archive }}"
+    mode: "0644"
+  when: not powershell_check.stat.exists
+
+- name: Create PowerShell installation directory
+  ansible.builtin.file:
+    path: "{{ powershell_install_dir }}"
+    state: directory
+    mode: "0755"
+  when: not powershell_check.stat.exists
+
+- name: Extract PowerShell archive
+  ansible.builtin.unarchive:
+    src: "{{ powershell_archive }}"
+    dest: "{{ powershell_install_dir }}"
+    remote_src: true
+  when: not powershell_check.stat.exists
+
+- name: Make PowerShell executable
+  ansible.builtin.file:
+    path: "{{ powershell_install_dir }}/pwsh"
+    mode: "0755"
+
+- name: Configure default PowerShell in Unix shell profiles
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_env.HOME }}/{{ item }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - PowerShell {{ powershell_target_version }}"
+    create: true
+    mode: "0644"
+    block: |
+      export PATH="{{ powershell_install_dir }}:$PATH"
+  loop:
+    - .bashrc
+    - .profile
+    - .zshrc
+  when: dev_language.default | default(false) | bool

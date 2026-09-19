@@ -1,0 +1,38 @@
+---
+- name: Set requested PowerShell version
+  ansible.builtin.set_fact:
+    powershell_requested_version: "{{ dev_language.version | default(default_powershell_version) }}"
+
+- name: Resolve latest PowerShell release
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/PowerShell/PowerShell/releases/latest
+    method: GET
+    headers:
+      Accept: application/vnd.github+json
+    status_code: 200
+  register: powershell_release
+  when: powershell_requested_version == 'latest'
+
+- name: Set effective PowerShell version
+  ansible.builtin.set_fact:
+    powershell_target_version: >-
+      {{ (powershell_release.json.tag_name | regex_replace('^v', ''))
+         if powershell_requested_version == 'latest' else powershell_requested_version }}
+
+- name: Set PowerShell archive parameters
+  ansible.builtin.set_fact:
+    powershell_architecture: "{{ 'arm64' if ansible_architecture in ['aarch64', 'arm64', 'ARM64'] else ('x64' if ansible_architecture in ['x86_64', 'AMD64'] else 'x86') }}"
+    powershell_platform: "{{ 'osx' if ansible_system == 'Darwin' else ('win' if ansible_system == 'Windows' else 'linux') }}"
+    powershell_archive_extension: "{{ 'zip' if ansible_system == 'Windows' else 'tar.gz' }}"
+
+- name: Install PowerShell on Linux or macOS
+  ansible.builtin.include_tasks: unix.yml
+  when: ansible_system in ['Linux', 'Darwin']
+
+- name: Install PowerShell on Windows
+  ansible.builtin.include_tasks: windows.yml
+  when: ansible_system == 'Windows'
+
+- name: Install PowerShell tools
+  ansible.builtin.include_tasks: tools.yml
+  when: dev_language.tools | default(default_powershell_tools) | length > 0

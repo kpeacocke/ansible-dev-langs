@@ -39,6 +39,9 @@ It also includes the latest stable Rust toolchain with rust-analyzer, rustfmt,
 Clippy, cargo-audit, cargo-deny, and cargo-nextest. Use `tools: []` for a
 Rust-only toolchain.
 
+The default language set also includes the latest PowerShell release with
+PSScriptAnalyzer, Pester, and PSReadLine. Use `tools: []` for PowerShell only.
+
 It also includes the latest Go release with `gopls`, Delve, `govulncheck`, and
 gofumpt. Use `tools: []` for a Go runtime only.
 

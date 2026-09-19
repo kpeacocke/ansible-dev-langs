@@ -31,3 +31,7 @@ windows_go_root: "C:\\DevLangs\\Go"
 # Rustup toolchains are installed under the user's standard Cargo directory.
 rustup_root: "{{ ansible_env.HOME }}/.rustup"
 cargo_root: "{{ ansible_env.HOME }}/.cargo"
+
+# Root directory for side-by-side PowerShell installations.
+powershell_root: "{{ ansible_env.HOME }}/.powershell/versions"
+windows_powershell_root: "C:\\DevLangs\\PowerShell"

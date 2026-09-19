@@ -1,0 +1,31 @@
+---
+- name: Set Windows PowerShell installation paths
+  ansible.builtin.set_fact:
+    powershell_install_dir: "{{ windows_powershell_root }}\\{{ powershell_target_version }}"
+    powershell_archive: "C:\\Windows\\Temp\\PowerShell-{{ powershell_target_version }}.zip"
+
+- name: Check whether this PowerShell version is installed on Windows
+  ansible.windows.win_stat:
+    path: "{{ powershell_install_dir }}\\pwsh.exe"
+  register: powershell_check
+
+- name: Download PowerShell archive on Windows
+  ansible.windows.win_get_url:
+    url: "https://github.com/PowerShell/PowerShell/releases/download/v{{ powershell_target_version }}/PowerShell-{{ powershell_target_version }}-win-{{ powershell_architecture }}.zip"
+    dest: "{{ powershell_archive }}"
+  when: not powershell_check.stat.exists
+
+- name: Extract PowerShell archive on Windows
+  community.windows.win_unzip:
+    src: "{{ powershell_archive }}"
+    dest: "{{ powershell_install_dir }}"
+    delete_archive: false
+  when: not powershell_check.stat.exists
+
+- name: Add default PowerShell to the Windows PATH
+  ansible.windows.win_path:
+    elements:
+      - "{{ powershell_install_dir }}"
+    scope: machine
+    state: present
+  when: dev_language.default | default(false) | bool

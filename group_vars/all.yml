@@ -9,6 +9,7 @@ supported_languages:
   - javascript
   - go
   - rust
+  - powershell
 
 default_python_version: latest
 default_pip_version: latest
@@ -63,6 +64,11 @@ default_rust_tools:
   - cargo-audit
   - cargo-deny
   - cargo-nextest
+default_powershell_version: latest
+default_powershell_tools:
+  - PSScriptAnalyzer
+  - Pester
+  - PSReadLine
 
 # Default selection when no -e override is supplied. Override entirely with:
 #   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'
@@ -90,4 +96,7 @@ dev_languages:
     default: true
   - name: rust
     version: "{{ default_rust_version }}"
+    default: true
+  - name: powershell
+    version: "{{ default_powershell_version }}"
     default: true
