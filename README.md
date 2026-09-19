@@ -55,6 +55,17 @@ ansible-playbook site.yml -e '{"dev_languages":[
 
 Its default tools are dotnet-format, CSharpier, and dotnet-outdated-tool.
 
+Visual Basic/.NET is also supported but optional. Enable it with:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"visual_basic","version":"latest","default":true}
+]}'
+```
+
+Its default tools are dotnet-format and dotnet-outdated-tool. Use
+`tools: []` for the .NET SDK only.
+
 It also includes the latest Go release with `gopls`, Delve, `govulncheck`, and
 gofumpt. Use `tools: []` for a Go runtime only.
 

@@ -12,6 +12,7 @@ supported_languages:
   - powershell
   - perl
   - c#
+  - visual_basic
 
 default_python_version: latest
 default_pip_version: latest
@@ -79,6 +80,10 @@ default_csharp_version: latest
 default_csharp_tools:
   - dotnet-format
   - csharpier
+  - dotnet-outdated-tool
+default_visual_basic_version: latest
+default_visual_basic_tools:
+  - dotnet-format
   - dotnet-outdated-tool
 
 # Default selection when no -e override is supplied. Override entirely with:

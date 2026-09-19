@@ -1,0 +1,16 @@
+---
+- name: Set requested Visual Basic .NET SDK version
+  ansible.builtin.set_fact:
+    dotnet_requested_version: "{{ dev_language.version | default(default_visual_basic_version) }}"
+
+- name: Install Visual Basic .NET SDK on Linux or macOS
+  ansible.builtin.include_tasks: "{{ role_path }}/tasks/c#/unix.yml"
+  when: ansible_system in ['Linux', 'Darwin']
+
+- name: Install Visual Basic .NET SDK on Windows
+  ansible.builtin.include_tasks: "{{ role_path }}/tasks/c#/windows.yml"
+  when: ansible_system == 'Windows'
+
+- name: Install Visual Basic .NET tools
+  ansible.builtin.include_tasks: "{{ role_path }}/tasks/c#/tools.yml"
+  when: dev_language.tools | default(default_visual_basic_tools) | length > 0
