@@ -35,6 +35,10 @@ ansible-playbook site.yml
 The default language set includes Python, Temurin Java, and the latest Node.js
 JavaScript release, together with their default tools.
 
+It also includes the latest stable Rust toolchain with rust-analyzer, rustfmt,
+Clippy, cargo-audit, cargo-deny, and cargo-nextest. Use `tools: []` for a
+Rust-only toolchain.
+
 It also includes the latest Go release with `gopls`, Delve, `govulncheck`, and
 gofumpt. Use `tools: []` for a Go runtime only.
 

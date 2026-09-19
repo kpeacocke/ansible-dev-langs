@@ -27,3 +27,7 @@ windows_node_root: "C:\\DevLangs\\Node"
 # Root directory for side-by-side Go installations.
 go_root: "{{ ansible_env.HOME }}/.go/versions"
 windows_go_root: "C:\\DevLangs\\Go"
+
+# Rustup toolchains are installed under the user's standard Cargo directory.
+rustup_root: "{{ ansible_env.HOME }}/.rustup"
+cargo_root: "{{ ansible_env.HOME }}/.cargo"

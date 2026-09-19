@@ -1,0 +1,100 @@
+---
+- name: Install Rust components on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - "{{ cargo_root }}/bin/rustup"
+      - component
+      - add
+      - "{{ rust_tool }}"
+  loop:
+    - rust-analyzer
+    - rustfmt
+    - clippy
+  loop_control:
+    loop_var: rust_tool
+    label: "{{ rust_tool }}"
+  when:
+    - ansible_system in ['Linux', 'Darwin']
+    - rust_tool in (dev_language.tools | default(default_rust_tools))
+  changed_when: true
+
+- name: Install Rust components on Windows
+  ansible.windows.win_command:
+    argv:
+      - "{{ cargo_root_windows }}\\bin\\rustup.exe"
+      - component
+      - add
+      - "{{ rust_tool }}"
+  loop:
+    - rust-analyzer
+    - rustfmt
+    - clippy
+  loop_control:
+    loop_var: rust_tool
+    label: "{{ rust_tool }}"
+  when:
+    - ansible_system == 'Windows'
+    - rust_tool in (dev_language.tools | default(default_rust_tools))
+  changed_when: true
+
+- name: Install Rust cargo tools except nextest on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - "{{ cargo_root }}/bin/cargo"
+      - install
+      - "{{ rust_tool }}"
+  loop:
+    - cargo-audit
+    - cargo-deny
+  loop_control:
+    loop_var: rust_tool
+    label: "{{ rust_tool }}"
+  environment:
+    PATH: "{{ cargo_root }}/bin:{{ ansible_env.PATH }}"
+  when:
+    - ansible_system in ['Linux', 'Darwin']
+    - rust_tool in (dev_language.tools | default(default_rust_tools))
+  changed_when: true
+
+- name: Install cargo-nextest locked on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - "{{ cargo_root }}/bin/cargo"
+      - install
+      - --locked
+      - cargo-nextest
+  environment:
+    PATH: "{{ cargo_root }}/bin:{{ ansible_env.PATH }}"
+  when:
+    - ansible_system in ['Linux', 'Darwin']
+    - "'cargo-nextest' in (dev_language.tools | default(default_rust_tools))"
+  changed_when: true
+
+- name: Install Rust cargo tools except nextest on Windows
+  ansible.windows.win_command:
+    argv:
+      - "{{ cargo_root_windows }}\\bin\\cargo.exe"
+      - install
+      - "{{ rust_tool }}"
+  loop:
+    - cargo-audit
+    - cargo-deny
+  loop_control:
+    loop_var: rust_tool
+    label: "{{ rust_tool }}"
+  when:
+    - ansible_system == 'Windows'
+    - rust_tool in (dev_language.tools | default(default_rust_tools))
+  changed_when: true
+
+- name: Install cargo-nextest locked on Windows
+  ansible.windows.win_command:
+    argv:
+      - "{{ cargo_root_windows }}\\bin\\cargo.exe"
+      - install
+      - --locked
+      - cargo-nextest
+  when:
+    - ansible_system == 'Windows'
+    - "'cargo-nextest' in (dev_language.tools | default(default_rust_tools))"
+  changed_when: true

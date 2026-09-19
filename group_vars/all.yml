@@ -8,6 +8,7 @@ supported_languages:
   - java
   - javascript
   - go
+  - rust
 
 default_python_version: latest
 default_pip_version: latest
@@ -54,6 +55,14 @@ default_go_tools:
   - delve
   - govulncheck
   - gofumpt
+default_rust_version: latest
+default_rust_tools:
+  - rust-analyzer
+  - rustfmt
+  - clippy
+  - cargo-audit
+  - cargo-deny
+  - cargo-nextest
 
 # Default selection when no -e override is supplied. Override entirely with:
 #   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'
@@ -78,4 +87,7 @@ dev_languages:
     default: true
   - name: go
     version: "{{ default_go_version }}"
+    default: true
+  - name: rust
+    version: "{{ default_rust_version }}"
     default: true

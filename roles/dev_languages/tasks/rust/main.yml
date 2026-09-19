@@ -1,0 +1,25 @@
+---
+- name: Set requested Rust version
+  ansible.builtin.set_fact:
+    rust_requested_version: "{{ dev_language.version | default(default_rust_version) }}"
+
+- name: Set Rust target platform
+  ansible.builtin.set_fact:
+    rust_target: >-
+      {{ ('aarch64-apple-darwin' if ansible_architecture in ['aarch64', 'arm64', 'ARM64'] else 'x86_64-apple-darwin')
+         if ansible_system == 'Darwin' else
+         ('aarch64-pc-windows-msvc' if ansible_architecture in ['aarch64', 'arm64', 'ARM64'] else 'x86_64-pc-windows-msvc')
+         if ansible_system == 'Windows' else
+         ('aarch64-unknown-linux-gnu' if ansible_architecture in ['aarch64', 'arm64', 'ARM64'] else 'x86_64-unknown-linux-gnu') }}
+
+- name: Install Rust on Linux or macOS
+  ansible.builtin.include_tasks: unix.yml
+  when: ansible_system in ['Linux', 'Darwin']
+
+- name: Install Rust on Windows
+  ansible.builtin.include_tasks: windows.yml
+  when: ansible_system == 'Windows'
+
+- name: Install Rust tools
+  ansible.builtin.include_tasks: tools.yml
+  when: dev_language.tools | default(default_rust_tools) | length > 0
