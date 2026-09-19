@@ -5,21 +5,43 @@
 
 - name: Resolve latest stable Python release
   ansible.builtin.uri:
-    url: https://api.github.com/repos/python/cpython/tags?per_page=100
+    url: https://www.python.org/api/v2/downloads/release/?is_published=true&limit=1000
     method: GET
     return_content: true
     status_code: 200
   register: latest_python_release
   when: python_requested_version == 'latest'
 
+- name: Initialize stable Python release candidates
+  ansible.builtin.set_fact:
+    python_stable_versions: []
+  when: python_requested_version == 'latest'
+
+- name: Collect stable Python release candidates
+  ansible.builtin.set_fact:
+    python_stable_versions: >-
+      {{ python_stable_versions +
+         [(item.name | regex_replace('^Python ', ''))] }}
+  loop: "{{ latest_python_release.json | default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - python_requested_version == 'latest'
+    - item.name is match('^Python 3\\.[0-9]+\\.[0-9]+$')
+    - not (item.pre_release | default(false) | bool)
+
+- name: Require a stable Python release from the official API
+  ansible.builtin.assert:
+    that: python_stable_versions | length > 0
+    fail_msg: "The Python release API returned no stable Python 3 releases."
+  when: python_requested_version == 'latest'
+
 - name: Set effective Python version to install
   ansible.builtin.set_fact:
     python_target_version: >-
-      {{ (latest_python_release.json
-          | map(attribute='name')
-          | select('match', '^v[0-9]+\\.[0-9]+\\.[0-9]+$')
-          | first
-          | regex_replace('^v', ''))
+      {{ (python_stable_versions
+          | community.general.version_sort
+          | last)
          if python_requested_version == 'latest' else python_requested_version }}
 
 - name: Install Python (Linux via pyenv)
