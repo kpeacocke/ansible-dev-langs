@@ -1,0 +1,31 @@
+---
+- name: Set Windows Node.js installation paths
+  ansible.builtin.set_fact:
+    node_install_dir: "{{ windows_node_root }}\\{{ node_target_version }}"
+    node_archive: "C:\\Windows\\Temp\\node-{{ node_target_version }}-{{ node_platform }}-{{ node_architecture }}.zip"
+
+- name: Check whether this Node.js version is installed on Windows
+  ansible.windows.win_stat:
+    path: "{{ node_install_dir }}\\node.exe"
+  register: node_check
+
+- name: Download Node.js archive on Windows
+  ansible.windows.win_get_url:
+    url: "https://nodejs.org/dist/{{ node_target_version }}/node-{{ node_target_version }}-{{ node_platform }}-{{ node_architecture }}.zip"
+    dest: "{{ node_archive }}"
+  when: not node_check.stat.exists
+
+- name: Extract Node.js archive on Windows
+  community.windows.win_unzip:
+    src: "{{ node_archive }}"
+    dest: "{{ node_install_dir }}"
+    delete_archive: false
+  when: not node_check.stat.exists
+
+- name: Add default Node.js to the Windows PATH
+  ansible.windows.win_path:
+    elements:
+      - "{{ node_install_dir }}"
+    scope: machine
+    state: present
+  when: dev_language.default | default(false) | bool

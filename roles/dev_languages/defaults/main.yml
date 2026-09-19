@@ -19,3 +19,7 @@ windows_install_root: "C:\\DevLangs"
 # Root directory for side-by-side Temurin JDK installations.
 java_root: "{{ ansible_env.HOME }}/.jdks"
 windows_java_root: "C:\\DevLangs\\Java"
+
+# Root directory for side-by-side Node.js installations.
+node_root: "{{ ansible_env.HOME }}/.nodejs"
+windows_node_root: "C:\\DevLangs\\Node"

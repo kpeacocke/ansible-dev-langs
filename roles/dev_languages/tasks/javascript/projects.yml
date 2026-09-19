@@ -1,0 +1,22 @@
+---
+- name: Validate JavaScript project path
+  ansible.builtin.assert:
+    that:
+      - javascript_project.path is defined
+      - javascript_project.path | length > 0
+    fail_msg: "Each JavaScript project requires a non-empty path."
+
+- name: Write JavaScript version files on Linux or macOS
+  ansible.builtin.copy:
+    dest: "{{ javascript_project.path }}/{{ item }}"
+    content: "{{ node_target_version }}\n"
+    mode: "0644"
+  loop: "{{ javascript_project.version_files | default(['.nvmrc', '.node-version']) }}"
+  when: ansible_system in ['Linux', 'Darwin']
+
+- name: Write JavaScript version files on Windows
+  ansible.windows.win_copy:
+    dest: "{{ javascript_project.path }}\\{{ item }}"
+    content: "{{ node_target_version }}\r\n"
+  loop: "{{ javascript_project.version_files | default(['.nvmrc', '.node-version']) }}"
+  when: ansible_system == 'Windows'

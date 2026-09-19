@@ -1,0 +1,51 @@
+---
+- name: Set requested JavaScript runtime version
+  ansible.builtin.set_fact:
+    node_requested_version: "{{ dev_language.version | default(default_javascript_version) }}"
+
+- name: Resolve latest Node.js releases
+  ansible.builtin.uri:
+    url: https://nodejs.org/dist/index.json
+    method: GET
+    status_code: 200
+  register: node_releases
+  when: node_requested_version in ['latest', 'latest_lts']
+
+- name: Set effective Node.js version
+  ansible.builtin.set_fact:
+    node_target_version: >-
+      {{ (node_releases.json[0].version
+          if node_requested_version == 'latest' else
+          (node_releases.json
+           | selectattr('lts', 'ne', false)
+           | map(attribute='version')
+           | map('regex_replace', '^v', '')
+           | community.general.version_sort
+           | last | regex_replace('^', 'v')))
+         if node_requested_version in ['latest', 'latest_lts']
+         else ('v' ~ node_requested_version if node_requested_version is match('^[0-9]') else node_requested_version) }}
+
+- name: Resolve Node.js binary
+  ansible.builtin.set_fact:
+    node_architecture: "{{ 'arm64' if ansible_architecture in ['aarch64', 'arm64', 'ARM64'] else 'x64' }}"
+    node_platform: "{{ 'darwin' if ansible_system == 'Darwin' else ('win' if ansible_system == 'Windows' else 'linux') }}"
+    node_archive_extension: "{{ 'zip' if ansible_system == 'Windows' else 'tar.gz' }}"
+
+- name: Install Node.js on Linux or macOS
+  ansible.builtin.include_tasks: unix.yml
+  when: ansible_system in ['Linux', 'Darwin']
+
+- name: Install Node.js on Windows
+  ansible.builtin.include_tasks: windows.yml
+  when: ansible_system == 'Windows'
+
+- name: Install JavaScript tools
+  ansible.builtin.include_tasks: tools.yml
+  when: dev_language.tools | default(default_javascript_tools) | length > 0
+
+- name: Configure JavaScript project version files
+  ansible.builtin.include_tasks: projects.yml
+  loop: "{{ dev_language.projects | default([]) }}"
+  loop_control:
+    loop_var: javascript_project
+    label: "{{ javascript_project.path }}"

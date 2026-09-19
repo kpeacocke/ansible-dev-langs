@@ -6,6 +6,7 @@ supported_languages:
   - c
   - c++
   - java
+  - javascript
 
 default_python_version: latest
 default_pip_version: latest
@@ -37,6 +38,15 @@ default_java_version: latest
 default_java_tools:
   - maven
   - gradle
+default_javascript_version: latest
+default_javascript_tools:
+  - npm
+  - pnpm
+  - yarn
+  - typescript
+  - eslint
+  - prettier
+  - npm-check-updates
 
 # Default selection when no -e override is supplied. Override entirely with:
 #   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'
@@ -55,4 +65,7 @@ dev_languages:
   - name: java
     version: "{{ default_java_version }}"
     distribution: "{{ default_java_distribution }}"
+    default: true
+  - name: javascript
+    version: "{{ default_javascript_version }}"
     default: true

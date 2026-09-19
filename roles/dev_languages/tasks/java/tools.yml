@@ -7,6 +7,9 @@
   loop:
     - maven
     - gradle
+  environment:
+    JAVA_HOME: "{{ java_install_dir }}"
+    PATH: "{{ java_install_dir }}/bin:{{ ansible_env.PATH }}"
   when:
     - ansible_system == 'Linux'
     - item in (dev_language.tools | default(default_java_tools))
@@ -18,6 +21,9 @@
   loop:
     - maven
     - gradle
+  environment:
+    JAVA_HOME: "{{ java_install_dir }}"
+    PATH: "{{ java_install_dir }}/bin:{{ ansible_env.PATH }}"
   when:
     - ansible_system == 'Darwin'
     - item in (dev_language.tools | default(default_java_tools))

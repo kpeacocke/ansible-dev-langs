@@ -1,0 +1,47 @@
+---
+- name: Set Unix Node.js installation paths
+  ansible.builtin.set_fact:
+    node_install_dir: "{{ node_root }}/{{ node_target_version }}"
+    node_archive: "/tmp/node-{{ node_target_version }}-{{ node_platform }}-{{ node_architecture }}.{{ node_archive_extension }}"
+
+- name: Check whether this Node.js version is installed
+  ansible.builtin.stat:
+    path: "{{ node_install_dir }}/bin/node"
+  register: node_check
+
+- name: Download Node.js archive
+  ansible.builtin.get_url:
+    url: "https://nodejs.org/dist/{{ node_target_version }}/node-{{ node_target_version }}-{{ node_platform }}-{{ node_architecture }}.{{ node_archive_extension }}"
+    dest: "{{ node_archive }}"
+    mode: "0644"
+  when: not node_check.stat.exists
+
+- name: Create Node.js installation directory
+  ansible.builtin.file:
+    path: "{{ node_install_dir }}"
+    state: directory
+    mode: "0755"
+  when: not node_check.stat.exists
+
+- name: Extract Node.js archive
+  ansible.builtin.unarchive:
+    src: "{{ node_archive }}"
+    dest: "{{ node_install_dir }}"
+    remote_src: true
+    extra_opts:
+      - --strip-components=1
+  when: not node_check.stat.exists
+
+- name: Configure default Node.js in Unix shell profiles
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_env.HOME }}/{{ item }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - Node.js {{ node_target_version }}"
+    create: true
+    mode: "0644"
+    block: |
+      export PATH="{{ node_install_dir }}/bin:$PATH"
+  loop:
+    - .bashrc
+    - .profile
+    - .zshrc
+  when: dev_language.default | default(false) | bool

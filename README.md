@@ -32,6 +32,9 @@ Install the default language set (Python, default version) on localhost:
 ansible-playbook site.yml
 ```
 
+The default language set includes Python, Temurin Java, and the latest Node.js
+JavaScript release, together with their default tools.
+
 Install multiple Temurin JDK versions and select the default:
 
 ```bash
@@ -59,6 +62,33 @@ winget on Windows.
 
 C++ additionally installs clangd, GDB, and ccache by default. Override the
 tool list with `tools: []` or a custom list in the C++ entry.
+
+Install JavaScript through Node.js:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"javascript","version":"latest_lts","default":true}
+]}'
+```
+
+The default JavaScript tools are npm, pnpm, Yarn, TypeScript, ESLint,
+Prettier, and npm-check-updates. Node.js includes npm; the other tools are
+installed globally with the selected Node.js runtime. Use `tools: []` for
+Node.js only.
+
+Pin a Node.js version for project managers by creating `.nvmrc` and
+`.node-version` files:
+
+```yaml
+dev_languages:
+  - name: javascript
+    version: latest
+    default: true
+    projects:
+      - path: /workspace/my-app
+```
+
+The project directory must already exist.
 
 Install C++ with the same toolchain:
 
