@@ -44,6 +44,17 @@ ansible-playbook site.yml -e '{"dev_languages":[
 C uses the native package manager: GCC on Linux/macOS and LLVM/Clang via
 winget on Windows.
 
+C++ additionally installs clangd, GDB, and ccache by default. Override the
+tool list with `tools: []` or a custom list in the C++ entry.
+
+Install C++ with the same toolchain:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"c++"}
+]}'
+```
+
 By default, C also installs CMake, Ninja, formatting/lint tools, and
 pkg-config. Install only the compiler with an empty tool list:
 

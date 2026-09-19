@@ -4,6 +4,7 @@
 supported_languages:
   - python
   - c
+  - c++
 
 default_python_version: latest
 default_pip_version: latest
@@ -22,6 +23,14 @@ default_c_tools:
   - format
   - lint
   - pkg_config
+default_cpp_tools:
+  - build
+  - format
+  - lint
+  - pkg_config
+  - language_server
+  - debugger
+  - cache
 
 # Default selection when no -e override is supplied. Override entirely with:
 #   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'

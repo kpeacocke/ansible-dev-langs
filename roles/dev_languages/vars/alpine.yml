@@ -25,3 +25,9 @@ c_tool_packages:
     - clang-extra-tools
   pkg_config:
     - pkgconf
+  language_server:
+    - clang-extra-tools
+  debugger:
+    - gdb
+  cache:
+    - ccache

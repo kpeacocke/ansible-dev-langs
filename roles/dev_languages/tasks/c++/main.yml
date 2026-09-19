@@ -1,0 +1,7 @@
+---
+- name: Set C++ development tool defaults
+  ansible.builtin.set_fact:
+    c_tool_defaults: "{{ default_cpp_tools }}"
+
+- name: Install C++ compiler and development tools
+  ansible.builtin.include_tasks: ../c/main.yml

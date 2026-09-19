@@ -29,3 +29,9 @@ c_tool_packages:
     - clang-tidy
   pkg_config:
     - pkg-config
+  language_server:
+    - clangd
+  debugger:
+    - gdb
+  cache:
+    - ccache
