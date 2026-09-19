@@ -23,11 +23,7 @@
 
 - name: Resolve Temurin JDK binary from Adoptium
   ansible.builtin.uri:
-    url: >-
-      https://api.adoptium.net/v3/assets/latest/{{ java_target_version }}/hotspot
-      ?architecture={{ 'aarch64' if ansible_architecture in ['aarch64', 'arm64', 'ARM64'] else 'x64' }}
-      &image_type=jdk&jvm_impl=hotspot&os={{ 'mac' if ansible_system == 'Darwin' else ('windows' if ansible_system == 'Windows' else 'linux') }}
-      &vendor=eclipse&project=jdk&release_type=ga
+    url: "https://api.adoptium.net/v3/assets/latest/{{ java_target_version }}/hotspot?architecture={{ 'aarch64' if ansible_architecture in ['aarch64', 'arm64', 'ARM64'] else 'x64' }}&image_type=jdk&jvm_impl=hotspot&os={{ 'mac' if ansible_system == 'Darwin' else ('windows' if ansible_system == 'Windows' else 'linux') }}&vendor=eclipse&project=jdk&release_type=ga"
     method: GET
     status_code: 200
   register: adoptium_asset
