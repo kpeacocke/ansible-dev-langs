@@ -45,6 +45,16 @@ PSScriptAnalyzer, Pester, and PSReadLine. Use `tools: []` for PowerShell only.
 Perl is supported but optional. Enable it explicitly with `name: perl`; its
 default tools are Perl::Critic, Perl::Tidy, and Perl::LanguageServer.
 
+C#/.NET is supported but optional. Enable it with:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"c#","version":"latest","default":true}
+]}'
+```
+
+Its default tools are dotnet-format, CSharpier, and dotnet-outdated-tool.
+
 It also includes the latest Go release with `gopls`, Delve, `govulncheck`, and
 gofumpt. Use `tools: []` for a Go runtime only.
 

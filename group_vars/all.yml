@@ -11,6 +11,7 @@ supported_languages:
   - rust
   - powershell
   - perl
+  - c#
 
 default_python_version: latest
 default_pip_version: latest
@@ -74,6 +75,11 @@ default_perl_tools:
   - Perl::Critic
   - Perl::Tidy
   - Perl::LanguageServer
+default_csharp_version: latest
+default_csharp_tools:
+  - dotnet-format
+  - csharpier
+  - dotnet-outdated-tool
 
 # Default selection when no -e override is supplied. Override entirely with:
 #   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'
@@ -102,6 +108,7 @@ dev_languages:
   - name: rust
     version: "{{ default_rust_version }}"
     default: true
+  # C#/.NET is optional; add a c# entry to install it.
   - name: powershell
     version: "{{ default_powershell_version }}"
     default: true

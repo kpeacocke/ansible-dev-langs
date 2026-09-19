@@ -1,0 +1,16 @@
+---
+- name: Set requested .NET SDK version
+  ansible.builtin.set_fact:
+    dotnet_requested_version: "{{ dev_language.version | default(default_csharp_version) }}"
+
+- name: Install .NET SDK on Linux or macOS
+  ansible.builtin.include_tasks: unix.yml
+  when: ansible_system in ['Linux', 'Darwin']
+
+- name: Install .NET SDK on Windows
+  ansible.builtin.include_tasks: windows.yml
+  when: ansible_system == 'Windows'
+
+- name: Install C# tools
+  ansible.builtin.include_tasks: tools.yml
+  when: dev_language.tools | default(default_csharp_tools) | length > 0

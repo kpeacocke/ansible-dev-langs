@@ -1,0 +1,41 @@
+---
+- name: Set Windows .NET paths
+  ansible.builtin.set_fact:
+    dotnet_root: "C:\\Program Files\\dotnet"
+    dotnet_install_script: "C:\\Windows\\Temp\\dotnet-install.ps1"
+
+- name: Check whether dotnet is installed on Windows
+  ansible.windows.win_stat:
+    path: "{{ dotnet_root }}\\dotnet.exe"
+  register: dotnet_check
+
+- name: Download Microsoft .NET install script on Windows
+  ansible.windows.win_get_url:
+    url: https://dot.net/v1/dotnet-install.ps1
+    dest: "{{ dotnet_install_script }}"
+  when: not dotnet_check.stat.exists
+
+- name: Install .NET SDK on Windows
+  ansible.windows.win_shell: >-
+    & powershell -NoProfile -ExecutionPolicy Bypass -File "{{ dotnet_install_script }}"
+    -InstallDir "{{ dotnet_root }}"
+    {{ '-Version ' ~ dotnet_requested_version if dotnet_requested_version != 'latest' else '-Channel STS' }}
+  when: not dotnet_check.stat.exists
+  changed_when: true
+
+- name: Configure default .NET on Windows
+  ansible.windows.win_environment:
+    state: present
+    level: machine
+    variables:
+      DOTNET_ROOT: "{{ dotnet_root }}"
+  when: dev_language.default | default(false) | bool
+
+- name: Add default .NET to the Windows PATH
+  ansible.windows.win_path:
+    elements:
+      - "{{ dotnet_root }}"
+      - "C:\\Users\\Public\\dotnet-tools"
+    scope: machine
+    state: present
+  when: dev_language.default | default(false) | bool
