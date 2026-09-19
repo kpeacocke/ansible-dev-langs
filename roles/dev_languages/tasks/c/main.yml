@@ -1,7 +1,10 @@
 ---
 - name: Set selected C development tools
   ansible.builtin.set_fact:
-    c_selected_tools: "{{ dev_language.tools | default(c_tool_defaults | default(default_c_tools)) }}"
+    c_selected_tools: >-
+      {{ dev_language.tools
+         if dev_language.tools is defined else
+         (default_cpp_tools if dev_language.name == 'c++' else default_c_tools) }}
 
 - name: Install C compiler on Linux
   ansible.builtin.package:
