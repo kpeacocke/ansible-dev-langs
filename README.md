@@ -35,6 +35,9 @@ ansible-playbook site.yml
 The default language set includes Python, Temurin Java, and the latest Node.js
 JavaScript release, together with their default tools.
 
+It also includes the latest Go release with `gopls`, Delve, `govulncheck`, and
+gofumpt. Use `tools: []` for a Go runtime only.
+
 Install multiple Temurin JDK versions and select the default:
 
 ```bash

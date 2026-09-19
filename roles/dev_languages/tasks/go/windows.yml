@@ -1,0 +1,40 @@
+---
+- name: Set Windows Go installation paths
+  ansible.builtin.set_fact:
+    go_install_dir: "{{ windows_go_root }}\\{{ go_target_version }}"
+    go_archive: "C:\\Windows\\Temp\\{{ go_target_version }}.windows-{{ go_architecture }}.zip"
+
+- name: Check whether this Go version is installed on Windows
+  ansible.windows.win_stat:
+    path: "{{ go_install_dir }}\\bin\\go.exe"
+  register: go_check
+
+- name: Download Go archive on Windows
+  ansible.windows.win_get_url:
+    url: "https://go.dev/dl/{{ go_target_version }}.windows-{{ go_architecture }}.zip"
+    dest: "{{ go_archive }}"
+  when: not go_check.stat.exists
+
+- name: Extract Go archive on Windows
+  community.windows.win_unzip:
+    src: "{{ go_archive }}"
+    dest: "{{ go_install_dir }}"
+    delete_archive: false
+  when: not go_check.stat.exists
+
+- name: Configure default Go on Windows
+  ansible.windows.win_environment:
+    state: present
+    level: machine
+    variables:
+      GOPATH: "{{ go_install_dir }}\\tools"
+  when: dev_language.default | default(false) | bool
+
+- name: Add default Go to the Windows PATH
+  ansible.windows.win_path:
+    elements:
+      - "{{ go_install_dir }}\\bin"
+      - "{{ go_install_dir }}\\tools\\bin"
+    scope: machine
+    state: present
+  when: dev_language.default | default(false) | bool

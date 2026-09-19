@@ -1,0 +1,38 @@
+---
+- name: Set requested Go version
+  ansible.builtin.set_fact:
+    go_requested_version: "{{ dev_language.version | default(default_go_version) }}"
+
+- name: Resolve latest Go release
+  ansible.builtin.uri:
+    url: https://go.dev/dl/?mode=json
+    method: GET
+    status_code: 200
+  register: go_releases
+  when: go_requested_version == 'latest'
+
+- name: Set effective Go version
+  ansible.builtin.set_fact:
+    go_target_version: >-
+      {{ (go_releases.json[0].version
+          if go_requested_version == 'latest' else
+          ('go' ~ go_requested_version
+           if go_requested_version is match('^[0-9]') else go_requested_version)) }}
+
+- name: Set Go archive parameters
+  ansible.builtin.set_fact:
+    go_architecture: "{{ 'arm64' if ansible_architecture in ['aarch64', 'arm64', 'ARM64'] else 'amd64' }}"
+    go_platform: "{{ 'darwin' if ansible_system == 'Darwin' else ('windows' if ansible_system == 'Windows' else 'linux') }}"
+    go_archive_extension: "{{ 'zip' if ansible_system == 'Windows' else 'tar.gz' }}"
+
+- name: Install Go on Linux or macOS
+  ansible.builtin.include_tasks: unix.yml
+  when: ansible_system in ['Linux', 'Darwin']
+
+- name: Install Go on Windows
+  ansible.builtin.include_tasks: windows.yml
+  when: ansible_system == 'Windows'
+
+- name: Install Go tools
+  ansible.builtin.include_tasks: tools.yml
+  when: dev_language.tools | default(default_go_tools) | length > 0

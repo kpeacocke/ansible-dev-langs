@@ -1,0 +1,65 @@
+---
+- name: Create Go tools directory
+  ansible.builtin.file:
+    path: "{{ go_install_dir }}/tools/bin"
+    state: directory
+    mode: "0755"
+  when: ansible_system in ['Linux', 'Darwin']
+
+- name: Install Go tools on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - "{{ go_install_dir }}/bin/go"
+      - install
+      - "{{ go_tool.module }}@latest"
+  loop:
+    - name: gopls
+      module: golang.org/x/tools/gopls
+    - name: delve
+      module: github.com/go-delve/delve/cmd/dlv
+    - name: govulncheck
+      module: golang.org/x/vuln/cmd/govulncheck
+    - name: gofumpt
+      module: mvdan.cc/gofumpt
+  loop_control:
+    loop_var: go_tool
+    label: "{{ go_tool.name }}"
+  environment:
+    GOPATH: "{{ go_install_dir }}/tools"
+    GOBIN: "{{ go_install_dir }}/tools/bin"
+    PATH: "{{ go_install_dir }}/bin:{{ go_install_dir }}/tools/bin:{{ ansible_env.PATH }}"
+  when: ansible_system in ['Linux', 'Darwin']
+    and go_tool.name in (dev_language.tools | default(default_go_tools))
+  changed_when: true
+
+- name: Create Go tools directory on Windows
+  ansible.windows.win_file:
+    path: "{{ go_install_dir }}\\tools\\bin"
+    state: directory
+  when: ansible_system == 'Windows'
+
+- name: Install Go tools on Windows
+  ansible.windows.win_command:
+    argv:
+      - "{{ go_install_dir }}\\bin\\go.exe"
+      - install
+      - "{{ go_tool.module }}@latest"
+  loop:
+    - name: gopls
+      module: golang.org/x/tools/gopls
+    - name: delve
+      module: github.com/go-delve/delve/cmd/dlv
+    - name: govulncheck
+      module: golang.org/x/vuln/cmd/govulncheck
+    - name: gofumpt
+      module: mvdan.cc/gofumpt
+  loop_control:
+    loop_var: go_tool
+    label: "{{ go_tool.name }}"
+  environment:
+    GOPATH: "{{ go_install_dir }}\\tools"
+    GOBIN: "{{ go_install_dir }}\\tools\\bin"
+    PATH: "{{ go_install_dir }};{{ go_install_dir }}\\bin;{{ go_install_dir }}\\tools\\bin;{{ ansible_env.PATH }}"
+  when: ansible_system == 'Windows'
+    and go_tool.name in (dev_language.tools | default(default_go_tools))
+  changed_when: true

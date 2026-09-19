@@ -7,6 +7,7 @@ supported_languages:
   - c++
   - java
   - javascript
+  - go
 
 default_python_version: latest
 default_pip_version: latest
@@ -47,6 +48,12 @@ default_javascript_tools:
   - eslint
   - prettier
   - npm-check-updates
+default_go_version: latest
+default_go_tools:
+  - gopls
+  - delve
+  - govulncheck
+  - gofumpt
 
 # Default selection when no -e override is supplied. Override entirely with:
 #   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'
@@ -68,4 +75,7 @@ dev_languages:
     default: true
   - name: javascript
     version: "{{ default_javascript_version }}"
+    default: true
+  - name: go
+    version: "{{ default_go_version }}"
     default: true

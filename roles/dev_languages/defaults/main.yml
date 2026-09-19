@@ -23,3 +23,7 @@ windows_java_root: "C:\\DevLangs\\Java"
 # Root directory for side-by-side Node.js installations.
 node_root: "{{ ansible_env.HOME }}/.nodejs"
 windows_node_root: "C:\\DevLangs\\Node"
+
+# Root directory for side-by-side Go installations.
+go_root: "{{ ansible_env.HOME }}/.go/versions"
+windows_go_root: "C:\\DevLangs\\Go"
