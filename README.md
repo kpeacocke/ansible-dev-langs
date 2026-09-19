@@ -42,6 +42,9 @@ Rust-only toolchain.
 The default language set also includes the latest PowerShell release with
 PSScriptAnalyzer, Pester, and PSReadLine. Use `tools: []` for PowerShell only.
 
+Perl is supported but optional. Enable it explicitly with `name: perl`; its
+default tools are Perl::Critic, Perl::Tidy, and Perl::LanguageServer.
+
 It also includes the latest Go release with `gopls`, Delve, `govulncheck`, and
 gofumpt. Use `tools: []` for a Go runtime only.
 

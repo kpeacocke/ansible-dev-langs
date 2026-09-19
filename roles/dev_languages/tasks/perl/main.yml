@@ -1,0 +1,58 @@
+---
+- name: Install Perl on Linux
+  ansible.builtin.package:
+    name:
+      - perl
+      - cpanminus
+    state: present
+  become: true
+  when: ansible_system == 'Linux'
+
+- name: Install Perl on macOS
+  community.general.homebrew:
+    name: perl
+    state: present
+  when: ansible_system == 'Darwin'
+
+- name: Install Perl on Windows with winget
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - StrawberryPerl.StrawberryPerl
+      - --exact
+      - --accept-source-agreements
+      - --accept-package-agreements
+  when: ansible_system == 'Windows'
+  changed_when: true
+
+- name: Install Perl tools on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - cpanm
+      - --notest
+      - "{{ perl_tool }}"
+  loop: "{{ dev_language.tools | default(default_perl_tools) }}"
+  loop_control:
+    loop_var: perl_tool
+    label: "{{ perl_tool }}"
+  when:
+    - ansible_system in ['Linux', 'Darwin']
+    - dev_language.tools is not defined or perl_tool in dev_language.tools
+  changed_when: true
+
+- name: Install Perl tools on Windows
+  ansible.windows.win_command:
+    argv:
+      - cpanm
+      - --notest
+      - "{{ perl_tool }}"
+  loop: "{{ dev_language.tools | default(default_perl_tools) }}"
+  loop_control:
+    loop_var: perl_tool
+    label: "{{ perl_tool }}"
+  when:
+    - ansible_system == 'Windows'
+    - dev_language.tools is not defined or perl_tool in dev_language.tools
+  changed_when: true

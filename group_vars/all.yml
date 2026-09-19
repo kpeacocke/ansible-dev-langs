@@ -10,6 +10,7 @@ supported_languages:
   - go
   - rust
   - powershell
+  - perl
 
 default_python_version: latest
 default_pip_version: latest
@@ -69,6 +70,10 @@ default_powershell_tools:
   - PSScriptAnalyzer
   - Pester
   - PSReadLine
+default_perl_tools:
+  - Perl::Critic
+  - Perl::Tidy
+  - Perl::LanguageServer
 
 # Default selection when no -e override is supplied. Override entirely with:
 #   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'
