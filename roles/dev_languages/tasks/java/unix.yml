@@ -1,0 +1,52 @@
+---
+- name: Set Unix Java installation paths
+  ansible.builtin.set_fact:
+    java_install_dir: "{{ java_root }}/temurin-{{ java_target_version }}"
+    java_archive: "/tmp/temurin-{{ java_target_version }}.tar.gz"
+
+- name: Check whether this Java version is installed
+  ansible.builtin.stat:
+    path: "{{ java_install_dir }}/bin/java"
+  register: java_check
+
+- name: Download Temurin JDK archive
+  ansible.builtin.get_url:
+    url: "{{ adoptium_asset.json[0].binary.package.link }}"
+    dest: "{{ java_archive }}"
+    mode: "0644"
+  when: not java_check.stat.exists
+
+- name: Create Java installation directory
+  ansible.builtin.file:
+    path: "{{ java_install_dir }}"
+    state: directory
+    mode: "0755"
+  when: not java_check.stat.exists
+
+- name: Extract Temurin JDK
+  ansible.builtin.unarchive:
+    src: "{{ java_archive }}"
+    dest: "{{ java_install_dir }}"
+    remote_src: true
+    extra_opts:
+      - --strip-components=1
+  when: not java_check.stat.exists
+
+- name: Set Java home for this entry
+  ansible.builtin.set_fact:
+    java_home: "{{ java_install_dir }}"
+
+- name: Configure default Java in Unix shell profiles
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_env.HOME }}/{{ item }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - Java {{ java_target_version }}"
+    create: true
+    mode: "0644"
+    block: |
+      export JAVA_HOME="{{ java_install_dir }}"
+      export PATH="$JAVA_HOME/bin:$PATH"
+  loop:
+    - .bashrc
+    - .profile
+    - .zshrc
+  when: dev_language.default | default(false) | bool

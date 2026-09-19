@@ -1,0 +1,41 @@
+---
+- name: Install Java tools on Linux
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  become: true
+  loop:
+    - maven
+    - gradle
+  when:
+    - ansible_system == 'Linux'
+    - item in (dev_language.tools | default(default_java_tools))
+
+- name: Install Java tools on macOS
+  community.general.homebrew:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - maven
+    - gradle
+  when:
+    - ansible_system == 'Darwin'
+    - item in (dev_language.tools | default(default_java_tools))
+
+- name: Install Java tools on Windows with winget
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - "{{ item }}"
+      - --exact
+      - --accept-source-agreements
+      - --accept-package-agreements
+  loop:
+    - Apache.Maven
+    - Gradle.Gradle
+  when:
+    - ansible_system == 'Windows'
+    - item == 'Apache.Maven' and 'maven' in (dev_language.tools | default(default_java_tools))
+      or item == 'Gradle.Gradle' and 'gradle' in (dev_language.tools | default(default_java_tools))

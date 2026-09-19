@@ -1,0 +1,39 @@
+---
+- name: Set Windows Java installation paths
+  ansible.builtin.set_fact:
+    java_install_dir: "{{ windows_java_root }}\\temurin-{{ java_target_version }}"
+    java_archive: "C:\\Windows\\Temp\\temurin-{{ java_target_version }}.zip"
+
+- name: Check whether this Java version is installed on Windows
+  ansible.windows.win_stat:
+    path: "{{ java_install_dir }}\\bin\\java.exe"
+  register: java_check
+
+- name: Download Temurin JDK archive on Windows
+  ansible.windows.win_get_url:
+    url: "{{ adoptium_asset.json[0].binary.package.link }}"
+    dest: "{{ java_archive }}"
+  when: not java_check.stat.exists
+
+- name: Extract Temurin JDK on Windows
+  community.windows.win_unzip:
+    src: "{{ java_archive }}"
+    dest: "{{ java_install_dir }}"
+    delete_archive: false
+  when: not java_check.stat.exists
+
+- name: Configure default Java on Windows
+  ansible.windows.win_environment:
+    state: present
+    level: machine
+    variables:
+      JAVA_HOME: "{{ java_install_dir }}"
+  when: dev_language.default | default(false) | bool
+
+- name: Add default Java to the Windows PATH
+  ansible.windows.win_path:
+    elements:
+      - "{{ java_install_dir }}\\bin"
+    scope: machine
+    state: present
+  when: dev_language.default | default(false) | bool

@@ -32,6 +32,19 @@ Install the default language set (Python, default version) on localhost:
 ansible-playbook site.yml
 ```
 
+Install multiple Temurin JDK versions and select the default:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"java","version":"17"},
+  {"name":"java","version":"21","default":true,"tools":["maven","gradle"]}
+]}'
+```
+
+Use `version: "latest"` for the newest GA feature release or
+`version: "latest_lts"` for the newest Adoptium LTS release. Java uses Temurin
+archives from Adoptium and installs each version side by side.
+
 Install the C compiler alongside Python:
 
 ```bash

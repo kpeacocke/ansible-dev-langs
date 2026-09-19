@@ -1,0 +1,51 @@
+---
+- name: Set requested Java version
+  ansible.builtin.set_fact:
+    java_requested_version: "{{ dev_language.version | default(default_java_version) }}"
+    java_distribution: "{{ dev_language.distribution | default(default_java_distribution) }}"
+
+- name: Resolve latest Java release from Adoptium
+  ansible.builtin.uri:
+    url: https://api.adoptium.net/v3/info/available_releases
+    method: GET
+    status_code: 200
+  register: adoptium_releases
+  when: java_requested_version in ['latest', 'latest_lts']
+
+- name: Set effective Java version
+  ansible.builtin.set_fact:
+    java_target_version: >-
+      {{ (adoptium_releases.json.most_recent_feature_release
+          if java_requested_version == 'latest' else
+          adoptium_releases.json.most_recent_lts)
+         if java_requested_version in ['latest', 'latest_lts']
+         else java_requested_version }}
+
+- name: Resolve Temurin JDK binary from Adoptium
+  ansible.builtin.uri:
+    url: >-
+      https://api.adoptium.net/v3/assets/latest/{{ java_target_version }}/hotspot
+      ?architecture={{ 'aarch64' if ansible_architecture in ['aarch64', 'arm64', 'ARM64'] else 'x64' }}
+      &image_type=jdk&jvm_impl=hotspot&os={{ 'mac' if ansible_system == 'Darwin' else ('windows' if ansible_system == 'Windows' else 'linux') }}
+      &vendor=eclipse&project=jdk&release_type=ga
+    method: GET
+    status_code: 200
+  register: adoptium_asset
+
+- name: Require a matching Adoptium JDK binary
+  ansible.builtin.assert:
+    that:
+      - adoptium_asset.json | length > 0
+    fail_msg: "No Adoptium Temurin JDK found for Java {{ java_target_version }} on {{ ansible_system }}."
+
+- name: Install Java on Linux or macOS
+  ansible.builtin.include_tasks: unix.yml
+  when: ansible_system in ['Linux', 'Darwin']
+
+- name: Install Java on Windows
+  ansible.builtin.include_tasks: windows.yml
+  when: ansible_system == 'Windows'
+
+- name: Install Maven and Gradle tools
+  ansible.builtin.include_tasks: tools.yml
+  when: dev_language.tools | default(default_java_tools) | length > 0
