@@ -3,10 +3,25 @@
 # Add a new name here plus roles/dev_languages/tasks/<name>/*.yml to extend.
 supported_languages:
   - python
+  - c
 
 default_python_version: latest
 default_pip_version: latest
 default_pipx_version: latest
+default_python_tools:
+  - uv
+  - poetry
+  - hatch
+  - pytest
+  - ruff
+  - mypy
+  - debugpy
+  - ipython
+default_c_tools:
+  - build
+  - format
+  - lint
+  - pkg_config
 
 # Default selection when no -e override is supplied. Override entirely with:
 #   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'
@@ -16,6 +31,8 @@ dev_languages:
     version: "{{ default_python_version }}"
     pip_version: "{{ default_pip_version }}"
     pipx_version: "{{ default_pipx_version }}"
+    # Set tools: [] to install no additional Python tools.
+    # tools: "{{ default_python_tools }}"
     # Add venv definitions here when environments should be created.
     # venvs:
     #   - path: "{{ ansible_env.HOME }}/.venvs/project"

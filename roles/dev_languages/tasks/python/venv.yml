@@ -12,7 +12,7 @@
       {{ python_venv.path + ('\\Scripts\\python.exe'
          if ansible_system == 'Windows' else '/bin/python') }}
 
-- name: Create virtual environment at {{ python_venv.path }}
+- name: Create virtual environment at {{ python_venv.path }} on Linux or macOS
   ansible.builtin.command:
     argv: >-
       {{ [python_executable, '-m', 'venv']
@@ -20,4 +20,16 @@
             if python_venv.system_site_packages | default(false) else [])
          + [python_venv.path] }}
     creates: "{{ python_venv_executable }}"
+  when: ansible_system != 'Windows'
+  changed_when: true
+
+- name: Create virtual environment at {{ python_venv.path }} on Windows
+  ansible.windows.win_command:
+    argv: >-
+      {{ [python_executable, '-m', 'venv']
+         + (['--system-site-packages']
+            if python_venv.system_site_packages | default(false) else [])
+         + [python_venv.path] }}
+    creates: "{{ python_venv_executable }}"
+  when: ansible_system == 'Windows'
   changed_when: true

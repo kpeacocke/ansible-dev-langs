@@ -3,7 +3,7 @@
   ansible.builtin.set_fact:
     pip_target_version: "{{ dev_language.pip_version }}"
 
-- name: Install pip {{ pip_target_version }}
+- name: Install pip {{ pip_target_version }} on Linux or macOS
   ansible.builtin.command:
     argv:
       - "{{ python_executable }}"
@@ -13,6 +13,22 @@
       - --upgrade
       - "{{ 'pip' if pip_target_version == 'latest' else 'pip==' ~ pip_target_version }}"
   register: pip_install
+  when: ansible_system != 'Windows'
   changed_when: >-
     'Successfully installed' in pip_install.stdout or
     'Successfully uninstalled' in pip_install.stdout
+
+- name: Install pip {{ pip_target_version }} on Windows
+  ansible.windows.win_command:
+    argv:
+      - "{{ python_executable }}"
+      - -m
+      - pip
+      - install
+      - --upgrade
+      - "{{ 'pip' if pip_target_version == 'latest' else 'pip==' ~ pip_target_version }}"
+  register: pip_install_windows
+  when: ansible_system == 'Windows'
+  changed_when: >-
+    'Successfully installed' in pip_install_windows.stdout or
+    'Successfully uninstalled' in pip_install_windows.stdout

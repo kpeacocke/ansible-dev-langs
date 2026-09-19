@@ -15,3 +15,17 @@ python_build_dependencies:
   - libxmlsec1-dev
   - libffi-dev
   - liblzma-dev
+
+c_compiler_packages:
+  - build-essential
+
+c_tool_packages:
+  build:
+    - cmake
+    - ninja-build
+  format:
+    - clang-format
+  lint:
+    - clang-tidy
+  pkg_config:
+    - pkg-config

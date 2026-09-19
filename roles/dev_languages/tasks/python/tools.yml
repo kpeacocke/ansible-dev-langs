@@ -1,0 +1,38 @@
+---
+- name: Install Python development tools on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - "{{ python_executable }}"
+      - -m
+      - pip
+      - install
+      - --upgrade
+      - "{{ python_tool }}"
+  loop: "{{ dev_language.tools | default(default_python_tools) }}"
+  loop_control:
+    loop_var: python_tool
+    label: "{{ python_tool }}"
+  register: python_tool_install
+  when: ansible_system != 'Windows'
+  changed_when: >-
+    'Successfully installed' in python_tool_install.stdout or
+    'Successfully uninstalled' in python_tool_install.stdout
+
+- name: Install Python development tools on Windows
+  ansible.windows.win_command:
+    argv:
+      - "{{ python_executable }}"
+      - -m
+      - pip
+      - install
+      - --upgrade
+      - "{{ python_tool }}"
+  loop: "{{ dev_language.tools | default(default_python_tools) }}"
+  loop_control:
+    loop_var: python_tool
+    label: "{{ python_tool }}"
+  register: python_tool_install_windows
+  when: ansible_system == 'Windows'
+  changed_when: >-
+    'Successfully installed' in python_tool_install_windows.stdout or
+    'Successfully uninstalled' in python_tool_install_windows.stdout

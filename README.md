@@ -3,7 +3,7 @@
 Idempotent, platform-agnostic Ansible playbook that installs development
 language toolchains on a workstation. Auto-detects OS family/distribution,
 architecture (x86_64/arm64/aarch64), and installs the requested versions
-correctly on PATH. Installs Python together with versioned pip and pipx tooling.
+correctly on PATH. Installs Python tooling and optional C compiler support.
 
 ## Supported platforms
 
@@ -21,9 +21,8 @@ python3 -m pip install ansible
 ansible-galaxy collection install -r requirements.yml
 ```
 
-For Windows targets, ensure WinRM is configured and reachable, and that
-`ansible.windows` / `community.windows` collections are installed (included
-in requirements.yml).
+For Windows targets, ensure WinRM is configured and reachable, and that the
+required Ansible collections are installed from `requirements.yml`.
 
 ## Usage
 
@@ -31,6 +30,27 @@ Install the default language set (Python, default version) on localhost:
 
 ```bash
 ansible-playbook site.yml
+```
+
+Install the C compiler alongside Python:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"python","version":"latest"},
+  {"name":"c"}
+]}'
+```
+
+C uses the native package manager: GCC on Linux/macOS and LLVM/Clang via
+winget on Windows.
+
+By default, C also installs CMake, Ninja, formatting/lint tools, and
+pkg-config. Install only the compiler with an empty tool list:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"c","tools":[]}
+]}'
 ```
 
 Select Python and its optional tooling versions via extra vars:
@@ -47,6 +67,17 @@ ansible-playbook site.yml -e '{"dev_languages":[
   {"name":"python","version":"3.12.4","pip_version":"25.0"}
 ]}'
 ```
+
+Python also installs common development tools by default: uv, Poetry, Hatch,
+pytest, Ruff, mypy, debugpy, and IPython. Override the list or disable them:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"python","tools":["uv","pytest","ruff"]}
+]}'
+```
+
+Use `"tools":[]` to install no additional Python tools.
 
 Create virtual environments by adding `venvs` to a Python entry. Each
 environment is created with that entry's Python interpreter:

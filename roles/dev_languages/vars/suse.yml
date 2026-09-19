@@ -12,3 +12,19 @@ python_build_dependencies:
   - xz-devel
   - git
   - curl
+
+c_compiler_packages:
+  - gcc
+  - gcc-c++
+  - make
+
+c_tool_packages:
+  build:
+    - cmake
+    - ninja
+  format:
+    - clang-tools
+  lint:
+    - clang-tools
+  pkg_config:
+    - pkg-config

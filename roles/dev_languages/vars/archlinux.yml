@@ -11,3 +11,17 @@ python_build_dependencies:
   - xz
   - git
   - curl
+
+c_compiler_packages:
+  - base-devel
+
+c_tool_packages:
+  build:
+    - cmake
+    - ninja
+  format:
+    - clang
+  lint:
+    - clang
+  pkg_config:
+    - pkgconf

@@ -3,7 +3,7 @@
   ansible.builtin.set_fact:
     pipx_target_version: "{{ dev_language.pipx_version }}"
 
-- name: Install pipx {{ pipx_target_version }}
+- name: Install pipx {{ pipx_target_version }} on Linux or macOS
   ansible.builtin.command:
     argv:
       - "{{ python_executable }}"
@@ -13,6 +13,22 @@
       - --upgrade
       - "{{ 'pipx' if pipx_target_version == 'latest' else 'pipx==' ~ pipx_target_version }}"
   register: pipx_install
+  when: ansible_system != 'Windows'
   changed_when: >-
     'Successfully installed' in pipx_install.stdout or
     'Successfully uninstalled' in pipx_install.stdout
+
+- name: Install pipx {{ pipx_target_version }} on Windows
+  ansible.windows.win_command:
+    argv:
+      - "{{ python_executable }}"
+      - -m
+      - pip
+      - install
+      - --upgrade
+      - "{{ 'pipx' if pipx_target_version == 'latest' else 'pipx==' ~ pipx_target_version }}"
+  register: pipx_install_windows
+  when: ansible_system == 'Windows'
+  changed_when: >-
+    'Successfully installed' in pipx_install_windows.stdout or
+    'Successfully uninstalled' in pipx_install_windows.stdout

@@ -1,0 +1,92 @@
+---
+- name: Install C compiler on Linux
+  ansible.builtin.package:
+    name: "{{ c_compiler_packages }}"
+    state: present
+  become: true
+  when: ansible_system == 'Linux'
+
+- name: Install C development tools on Linux
+  ansible.builtin.package:
+    name: "{{ c_tool_packages[item] }}"
+    state: present
+  become: true
+  loop: "{{ dev_language.tools | default(default_c_tools) }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - ansible_system == 'Linux'
+    - item in c_tool_packages
+
+- name: Install C compiler on macOS
+  community.general.homebrew:
+   name: >-
+    {{ ['gcc']
+      + (['cmake', 'ninja']
+        if 'build' in (dev_language.tools | default(default_c_tools)) else [])
+      + (['llvm']
+        if ('format' in (dev_language.tools | default(default_c_tools)) or
+           'lint' in (dev_language.tools | default(default_c_tools))) else [])
+      + (['pkg-config']
+        if 'pkg_config' in (dev_language.tools | default(default_c_tools)) else []) }}
+    state: present
+  when: ansible_system == 'Darwin'
+
+- name: Check whether winget is available on Windows
+  ansible.windows.win_command: where.exe winget.exe
+  register: windows_winget_check
+  changed_when: false
+  failed_when: false
+  when: ansible_system == 'Windows'
+
+- name: Require winget for Windows C development tools
+  ansible.builtin.assert:
+    that: windows_winget_check.rc == 0
+    fail_msg: "winget is required to install C tools on Windows."
+  when: ansible_system == 'Windows'
+
+- name: Check whether Clang is already installed on Windows
+  ansible.windows.win_command: where.exe clang.exe
+  register: windows_clang_check
+  changed_when: false
+  failed_when: false
+  when: ansible_system == 'Windows'
+
+- name: Install LLVM/Clang on Windows with winget
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - LLVM.LLVM
+      - --exact
+      - --accept-source-agreements
+      - --accept-package-agreements
+  when:
+    - ansible_system == 'Windows'
+    - windows_clang_check.rc != 0
+  changed_when: true
+
+- name: Install C development tools on Windows with winget
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - "{{ item }}"
+      - --exact
+      - --accept-source-agreements
+      - --accept-package-agreements
+  loop:
+    - Kitware.CMake
+    - Ninja-build.Ninja
+  when:
+    - ansible_system == 'Windows'
+    - item == 'Kitware.CMake' and 'build' in (dev_language.tools | default(default_c_tools))
+      or item == 'Ninja-build.Ninja' and 'build' in (dev_language.tools | default(default_c_tools))
+  changed_when: true
+
+- name: Fail on unsupported operating system for C
+  ansible.builtin.fail:
+    msg: "Unsupported operating system for C compiler install: {{ ansible_system }}"
+  when: ansible_system not in ['Linux', 'Darwin', 'Windows']

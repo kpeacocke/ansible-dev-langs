@@ -69,6 +69,10 @@
   ansible.builtin.include_tasks: ../pipx/main.yml
   when: dev_language.pipx_version is defined
 
+- name: Install optional Python development tools
+  ansible.builtin.include_tasks: tools.yml
+  when: dev_language.tools is defined or default_python_tools | length > 0
+
 - name: Create virtual environments for this Python version
   ansible.builtin.include_tasks: venv.yml
   loop: "{{ dev_language.venvs | default([]) }}"
