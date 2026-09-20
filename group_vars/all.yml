@@ -106,7 +106,7 @@ default_r_tools:
   - lintr
   - styler
   - languageserver
-  - testthat
+  - testvar
 default_php_version: latest
 default_php_tools:
   - composer

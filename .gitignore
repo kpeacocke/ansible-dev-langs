@@ -60,6 +60,7 @@ target/
 /vendor/bundle/
 .build/
 DerivedData/
+/.swift-version
 
 # Local-only inventory variants
 inventory/*.local.ini
