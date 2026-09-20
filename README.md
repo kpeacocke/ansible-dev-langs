@@ -160,6 +160,39 @@ ansible-playbook site.yml -e '{"dev_languages":[
 For repeatable setup, put the same YAML in `group_vars/all.yml` or a host/group
 vars file instead of passing JSON on the command line.
 
+### Install every cross-platform language
+
+Run the complete supported cross-platform set with:
+
+```bash
+ansible-playbook site.yml -e '{
+  "dev_languages": [
+    {"name":"python"},
+    {"name":"c"},
+    {"name":"c++"},
+    {"name":"java","default":true},
+    {"name":"javascript","default":true},
+    {"name":"typescript","default":true},
+    {"name":"go","default":true},
+    {"name":"rust","default":true},
+    {"name":"powershell","default":true},
+    {"name":"perl"},
+    {"name":"c#","default":true},
+    {"name":"visual_basic","default":true},
+    {"name":"r"},
+    {"name":"php"},
+    {"name":"ada"},
+    {"name":"ruby","default":true},
+    {"name":"lua"},
+    {"name":"swift"},
+    {"name":"objective_c"}
+  ]
+}'
+```
+
+On Windows, add `{"name":"vbscript"}` to the list. VBScript is Windows-only
+and should not be included on Linux or macOS.
+
 ### Install multiple Java versions
 
 ```bash
