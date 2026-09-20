@@ -14,6 +14,7 @@ supported_languages:
   - c#
   - visual_basic
   - r
+  - php
 
 default_python_version: latest
 default_pip_version: latest
@@ -95,6 +96,14 @@ default_r_tools:
   - styler
   - languageserver
   - testthat
+default_php_version: latest
+default_php_tools:
+  - composer
+  - phpunit/phpunit
+  - friendsofphp/php-cs-fixer
+  - phpstan/phpstan
+  - vimeo/psalm
+  - rector/rector
 
 # Default selection when no -e override is supplied. Override entirely with:
 #   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'

@@ -1,0 +1,197 @@
+---
+- name: Set requested PHP version
+  ansible.builtin.set_fact:
+    php_requested_version: "{{ dev_language.version | default(default_php_version) }}"
+
+- name: Require the latest PHP package-manager release
+  ansible.builtin.assert:
+    that: php_requested_version == 'latest'
+    fail_msg: "Only version 'latest' is supported for PHP."
+    quiet: true
+
+- name: Set PHP package names for Linux
+  ansible.builtin.set_fact:
+    php_linux_runtime_package: >-
+      {{ 'php83' if ansible_distribution == 'Alpine' else
+         ('php' if ansible_distribution == 'Archlinux' else 'php-cli') }}
+  when: ansible_system == 'Linux'
+
+- name: Install PHP on Linux
+  ansible.builtin.package:
+    name: "{{ php_linux_runtime_package }}"
+    state: present
+  become: true
+  when: ansible_system == 'Linux'
+
+- name: Install PHP on macOS
+  community.general.homebrew:
+    name: php
+    state: present
+  when: ansible_system == 'Darwin'
+
+- name: Check whether PHP is installed on Windows
+  ansible.windows.win_command: where.exe php.exe
+  register: windows_php_check
+  changed_when: false
+  failed_when: false
+  when: ansible_system == 'Windows'
+
+- name: Install PHP on Windows with winget
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - PHP.PHP
+      - --exact
+      - --accept-source-agreements
+      - --accept-package-agreements
+  when:
+    - ansible_system == 'Windows'
+    - windows_php_check.rc != 0
+  changed_when: true
+
+- name: Install Composer on Linux
+  ansible.builtin.package:
+    name: composer
+    state: present
+  become: true
+  when:
+    - ansible_system == 'Linux'
+    - dev_language.tools | default(default_php_tools) | length > 0
+
+- name: Install Composer on macOS
+  community.general.homebrew:
+    name: composer
+    state: present
+  when:
+    - ansible_system == 'Darwin'
+    - dev_language.tools | default(default_php_tools) | length > 0
+
+- name: Check whether Composer is installed on Windows
+  ansible.windows.win_command: where.exe composer.bat
+  register: windows_composer_check
+  changed_when: false
+  failed_when: false
+  when:
+    - ansible_system == 'Windows'
+    - dev_language.tools | default(default_php_tools) | length > 0
+
+- name: Install Composer on Windows with winget
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - Composer.Composer
+      - --exact
+      - --accept-source-agreements
+      - --accept-package-agreements
+  when:
+    - ansible_system == 'Windows'
+    - dev_language.tools | default(default_php_tools) | length > 0
+    - windows_composer_check.rc != 0
+  changed_when: true
+
+- name: Check installed PHP Composer tools on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - composer
+      - global
+      - show
+      - "{{ php_tool }}"
+      - --no-ansi
+  loop: "{{ dev_language.tools | default(default_php_tools) }}"
+  loop_control:
+    loop_var: php_tool
+    label: "{{ php_tool }}"
+  register: unix_php_tool_checks
+  changed_when: false
+  failed_when: false
+  when:
+    - ansible_system in ['Linux', 'Darwin']
+    - php_tool != 'composer'
+
+- name: Install missing PHP Composer tools on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - composer
+      - global
+      - require
+      - "{{ item.php_tool }}"
+      - --no-interaction
+      - --no-progress
+  loop: "{{ unix_php_tool_checks.results | default([]) }}"
+  loop_control:
+    label: "{{ item.php_tool }}"
+  when:
+    - ansible_system in ['Linux', 'Darwin']
+    - item.rc != 0
+  changed_when: true
+
+- name: Check installed PHP Composer tools on Windows
+  ansible.windows.win_command:
+    argv:
+      - composer.bat
+      - global
+      - show
+      - "{{ php_tool }}"
+      - --no-ansi
+  loop: "{{ dev_language.tools | default(default_php_tools) }}"
+  loop_control:
+    loop_var: php_tool
+    label: "{{ php_tool }}"
+  register: windows_php_tool_checks
+  changed_when: false
+  failed_when: false
+  when:
+    - ansible_system == 'Windows'
+    - php_tool != 'composer'
+
+- name: Install missing PHP Composer tools on Windows
+  ansible.windows.win_command:
+    argv:
+      - composer.bat
+      - global
+      - require
+      - "{{ item.php_tool }}"
+      - --no-interaction
+      - --no-progress
+  loop: "{{ windows_php_tool_checks.results | default([]) }}"
+  loop_control:
+    label: "{{ item.php_tool }}"
+  when:
+    - ansible_system == 'Windows'
+    - item.rc != 0
+  changed_when: true
+
+- name: Add Composer global tools to Unix shell profiles
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_env.HOME }}/{{ item }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - Composer global tools"
+    create: true
+    mode: "0644"
+    block: |
+      export PATH="$HOME/.config/composer/vendor/bin:$HOME/.composer/vendor/bin:$PATH"
+  loop:
+    - .bashrc
+    - .profile
+    - .zshrc
+  when:
+    - ansible_system in ['Linux', 'Darwin']
+    - dev_language.tools | default(default_php_tools) | length > 0
+
+- name: Add Composer global tools to the Windows PATH
+  ansible.windows.win_path:
+    elements:
+      - '{{ ansible_env.APPDATA }}\Composer\vendor\bin'
+    scope: user
+    state: present
+  when:
+    - ansible_system == 'Windows'
+    - dev_language.tools | default(default_php_tools) | length > 0
+
+- name: Fail on unsupported operating system for PHP
+  ansible.builtin.fail:
+    msg: "Unsupported operating system for PHP install: {{ ansible_system }}"
+  when: ansible_system not in ['Linux', 'Darwin', 'Windows']

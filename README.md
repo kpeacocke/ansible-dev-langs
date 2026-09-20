@@ -85,6 +85,17 @@ ansible-playbook site.yml -e '{"dev_languages":[
 Its default CRAN tools are pak, renv, lintr, styler, languageserver, and
 testthat. Use `tools: []` to install R without additional packages.
 
+PHP is supported but optional. Enable the latest package-manager release with:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"php","version":"latest"}
+]}'
+```
+
+Its default Composer tools are PHPUnit, PHP-CS-Fixer, PHPStan, Psalm, and
+Rector. Use `tools: []` to install PHP without Composer or additional tools.
+
 It also includes the latest Go release with `gopls`, Delve, `govulncheck`, and
 gofumpt. Use `tools: []` for a Go runtime only.
 
