@@ -1,0 +1,131 @@
+---
+- name: Set requested Swift version and tools
+  ansible.builtin.set_fact:
+    swift_requested_version: "{{ dev_language.version | default(default_swift_version) }}"
+    swift_selected_tools: "{{ dev_language.tools | default(default_swift_tools) }}"
+
+- name: Require the latest Swift toolchain
+  ansible.builtin.assert:
+    that: swift_requested_version == 'latest'
+    fail_msg: "Only version 'latest' is supported for Swift."
+    quiet: true
+
+- name: Set Swiftly paths on Linux
+  ansible.builtin.set_fact:
+    swiftly_home: "{{ ansible_env.HOME }}/.local/share/swiftly"
+    swiftly_archive: "/tmp/swiftly-{{ ansible_architecture }}.tar.gz"
+    swiftly_download_architecture: "{{ 'aarch64' if ansible_architecture in ['aarch64', 'arm64'] else 'x86_64' }}"
+  when: ansible_system == 'Linux'
+
+- name: Check whether Swiftly is installed on Linux
+  ansible.builtin.stat:
+    path: "{{ swiftly_home }}/bin/swiftly"
+  register: swiftly_check
+  when: ansible_system == 'Linux'
+
+- name: Download Swiftly on Linux
+  ansible.builtin.get_url:
+    url: "https://download.swift.org/swiftly/linux/swiftly-{{ swiftly_download_architecture }}.tar.gz"
+    dest: "{{ swiftly_archive }}"
+    mode: "0644"
+  when:
+    - ansible_system == 'Linux'
+    - not swiftly_check.stat.exists
+
+- name: Install and initialize Swiftly on Linux
+  ansible.builtin.unarchive:
+    src: "{{ swiftly_archive }}"
+    dest: /tmp
+    remote_src: true
+  when:
+    - ansible_system == 'Linux'
+    - not swiftly_check.stat.exists
+
+- name: Initialize Swiftly and install the latest Swift toolchain on Linux
+  ansible.builtin.command:
+    argv:
+      - /tmp/swiftly
+      - init
+      - --quiet-shell-followup
+  environment:
+    HOME: "{{ ansible_env.HOME }}"
+  when:
+    - ansible_system == 'Linux'
+    - not swiftly_check.stat.exists
+  changed_when: true
+
+- name: Install Swift on macOS
+  community.general.homebrew:
+    name: swift
+    state: present
+  when: ansible_system == 'Darwin'
+
+- name: Install Visual Studio build dependencies for Swift on Windows
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - Microsoft.VisualStudio.2022.Community
+      - --exact
+      - --force
+      - --custom
+      - --add Microsoft.VisualStudio.Component.Windows11SDK.22621 --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Tools.ARM64
+      - --source
+      - winget
+  when: ansible_system == 'Windows'
+  changed_when: true
+
+- name: Install Swift on Windows with winget
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - Swift.Toolchain
+      - --exact
+      - --source
+      - winget
+  when: ansible_system == 'Windows'
+  changed_when: true
+
+- name: Check Swift tools on Linux
+  ansible.builtin.command:
+    argv:
+      - "{{ swiftly_home }}/bin/{{ swift_tool }}"
+      - --version
+  loop: "{{ swift_selected_tools }}"
+  loop_control:
+    loop_var: swift_tool
+    label: "{{ swift_tool }}"
+  changed_when: false
+  when: ansible_system == 'Linux'
+
+- name: Check Swift tools on macOS
+  ansible.builtin.command:
+    argv:
+      - "{{ swift_tool }}"
+      - --version
+  loop: "{{ swift_selected_tools }}"
+  loop_control:
+    loop_var: swift_tool
+    label: "{{ swift_tool }}"
+  changed_when: false
+  when: ansible_system == 'Darwin'
+
+- name: Check Swift tools on Windows
+  ansible.windows.win_command:
+    argv:
+      - "{{ swift_tool }}.exe"
+      - --version
+  loop: "{{ swift_selected_tools }}"
+  loop_control:
+    loop_var: swift_tool
+    label: "{{ swift_tool }}"
+  changed_when: false
+  when: ansible_system == 'Windows'
+
+- name: Fail on unsupported operating system for Swift
+  ansible.builtin.fail:
+    msg: "Unsupported operating system for Swift install: {{ ansible_system }}"
+  when: ansible_system not in ['Linux', 'Darwin', 'Windows']

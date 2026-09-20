@@ -20,6 +20,8 @@ supported_languages:
   - vbscript
   - ruby
   - lua
+  - swift
+  - objective_c
 
 default_python_version: latest
 default_pip_version: latest
@@ -135,6 +137,15 @@ default_lua_tools:
   - luacheck
   - busted
   - luaformatter
+default_swift_version: latest
+default_swift_tools:
+  - swift-format
+  - sourcekit-lsp
+default_objective_c_version: latest
+default_objective_c_tools:
+  - foundation
+  - format
+  - lint
 
 # Default selection when no -e override is supplied. Override entirely with:
 #   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'

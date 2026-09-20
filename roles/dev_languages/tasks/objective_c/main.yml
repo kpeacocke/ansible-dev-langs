@@ -1,0 +1,89 @@
+---
+- name: Set requested Objective-C version and tools
+  ansible.builtin.set_fact:
+    objective_c_requested_version: "{{ dev_language.version | default(default_objective_c_version) }}"
+    objective_c_selected_tools: "{{ dev_language.tools | default(default_objective_c_tools) }}"
+
+- name: Require the latest Objective-C toolchain
+  ansible.builtin.assert:
+    that: objective_c_requested_version == 'latest'
+    fail_msg: "Only version 'latest' is supported for Objective-C."
+    quiet: true
+
+- name: Set Objective-C packages for Linux
+  ansible.builtin.set_fact:
+    objective_c_linux_compiler_packages: >-
+      {{ ['clang', 'gobjc', 'libgnustep-base-dev']
+         if ansible_os_family == 'Debian' else
+         (['clang', 'gcc-objc', 'gnustep-base-devel']
+          if ansible_os_family == 'RedHat' else
+          ['clang', 'gcc-objc']) }}
+    objective_c_linux_tool_packages:
+      foundation: []
+      format:
+        - clang-format
+      lint:
+        - clang-tidy
+  when: ansible_system == 'Linux'
+
+- name: Install Objective-C compiler and runtime on Linux
+  ansible.builtin.package:
+    name: "{{ objective_c_linux_compiler_packages }}"
+    state: present
+  become: true
+  when: ansible_system == 'Linux'
+
+- name: Install Objective-C development tools on Linux
+  ansible.builtin.package:
+    name: "{{ objective_c_linux_tool_packages[objective_c_tool] }}"
+    state: present
+  become: true
+  loop: "{{ objective_c_selected_tools }}"
+  loop_control:
+    loop_var: objective_c_tool
+    label: "{{ objective_c_tool }}"
+  when:
+    - ansible_system == 'Linux'
+    - objective_c_tool in objective_c_linux_tool_packages
+    - objective_c_linux_tool_packages[objective_c_tool] | length > 0
+
+- name: Install Clang for Objective-C on macOS
+  community.general.homebrew:
+    name: llvm
+    state: present
+  when: ansible_system == 'Darwin'
+
+- name: Install Objective-C development tools on macOS
+  community.general.homebrew:
+    name: llvm
+    state: present
+  when:
+    - ansible_system == 'Darwin'
+    - objective_c_selected_tools | length > 0
+
+- name: Check whether Clang is installed on Windows
+  ansible.windows.win_command: where.exe clang.exe
+  register: windows_objective_c_clang_check
+  changed_when: false
+  failed_when: false
+  when: ansible_system == 'Windows'
+
+- name: Install LLVM Clang for Objective-C on Windows
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - LLVM.LLVM
+      - --exact
+      - --accept-source-agreements
+      - --accept-package-agreements
+  when:
+    - ansible_system == 'Windows'
+    - windows_objective_c_clang_check.rc != 0
+  changed_when: true
+
+- name: Fail on unsupported operating system for Objective-C
+  ansible.builtin.fail:
+    msg: "Unsupported operating system for Objective-C install: {{ ansible_system }}"
+  when: ansible_system not in ['Linux', 'Darwin', 'Windows']

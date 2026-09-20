@@ -153,6 +153,31 @@ ansible-playbook site.yml -e '{"dev_languages":[
 Its default LuaRocks tools are luacheck, busted, and luaformatter. Use
 `tools: []` to install Lua without LuaRocks or additional tools.
 
+Swift is supported but optional on Linux, macOS, and Windows. It uses Swiftly
+on Linux, Homebrew on macOS, and the official Swift WinGet package on Windows:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"swift","version":"latest"}
+]}'
+```
+
+Its default tools are swift-format and SourceKit-LSP. Apple platform frameworks
+such as SwiftUI and UIKit require macOS and Xcode.
+
+Objective-C is supported but optional on Linux, macOS, and Windows. Linux gets
+the GNU Objective-C runtime and GNUstep Foundation; macOS uses Clang; Windows
+supports Clang syntax but does not provide Apple Foundation frameworks:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"objective_c","version":"latest"}
+]}'
+```
+
+Its default tools provide Foundation support where available, clang-format, and
+clang-tidy. Use `tools: []` for the compiler/runtime only.
+
 It also includes the latest Go release with `gopls`, Delve, `govulncheck`, and
 gofumpt. Use `tools: []` for a Go runtime only.
 
