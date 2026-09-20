@@ -142,6 +142,17 @@ ansible-playbook site.yml -e '{"dev_languages":[
 Its default script hosts are cscript and wscript. On Windows versions where
 VBScript is a Feature on Demand, the playbook restores that capability.
 
+Lua is supported but optional. Enable the latest package-manager release with:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"lua","version":"latest"}
+]}'
+```
+
+Its default LuaRocks tools are luacheck, busted, and luaformatter. Use
+`tools: []` to install Lua without LuaRocks or additional tools.
+
 It also includes the latest Go release with `gopls`, Delve, `govulncheck`, and
 gofumpt. Use `tools: []` for a Go runtime only.
 

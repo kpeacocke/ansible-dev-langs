@@ -1,0 +1,151 @@
+---
+- name: Set requested Lua version
+  ansible.builtin.set_fact:
+    lua_requested_version: "{{ dev_language.version | default(default_lua_version) }}"
+
+- name: Require the latest Lua package-manager release
+  ansible.builtin.assert:
+    that: lua_requested_version == 'latest'
+    fail_msg: "Only version 'latest' is supported for Lua."
+    quiet: true
+
+- name: Set Lua package names for Linux
+  ansible.builtin.set_fact:
+    lua_linux_runtime_package: "{{ 'lua5.4' if ansible_os_family in ['Debian', 'Alpine'] else 'lua' }}"
+  when: ansible_system == 'Linux'
+
+- name: Install Lua on Linux
+  ansible.builtin.package:
+    name: "{{ lua_linux_runtime_package }}"
+    state: present
+  become: true
+  when: ansible_system == 'Linux'
+
+- name: Install LuaRocks on Linux
+  ansible.builtin.package:
+    name: luarocks
+    state: present
+  become: true
+  when:
+    - ansible_system == 'Linux'
+    - dev_language.tools | default(default_lua_tools) | length > 0
+
+- name: Install Lua and LuaRocks on macOS
+  community.general.homebrew:
+    name: "{{ ['lua'] + (['luarocks'] if dev_language.tools | default(default_lua_tools) | length > 0 else []) }}"
+    state: present
+  when: ansible_system == 'Darwin'
+
+- name: Check whether Lua is installed on Windows
+  ansible.windows.win_command: where.exe lua.exe
+  register: windows_lua_check
+  changed_when: false
+  failed_when: false
+  when: ansible_system == 'Windows'
+
+- name: Install Lua on Windows with winget
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - Lua.Lua
+      - --exact
+      - --accept-source-agreements
+      - --accept-package-agreements
+  when:
+    - ansible_system == 'Windows'
+    - windows_lua_check.rc != 0
+  changed_when: true
+
+- name: Check whether LuaRocks is installed on Windows
+  ansible.windows.win_command: where.exe luarocks.bat
+  register: windows_luarocks_check
+  changed_when: false
+  failed_when: false
+  when:
+    - ansible_system == 'Windows'
+    - dev_language.tools | default(default_lua_tools) | length > 0
+
+- name: Install LuaRocks on Windows with winget
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - LuaRocks.LuaRocks
+      - --exact
+      - --accept-source-agreements
+      - --accept-package-agreements
+  when:
+    - ansible_system == 'Windows'
+    - dev_language.tools | default(default_lua_tools) | length > 0
+    - windows_luarocks_check.rc != 0
+  changed_when: true
+
+- name: Check installed LuaRocks tools on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - luarocks
+      - show
+      - "{{ lua_tool }}"
+  loop: "{{ dev_language.tools | default(default_lua_tools) }}"
+  loop_control:
+    loop_var: lua_tool
+    label: "{{ lua_tool }}"
+  register: unix_lua_tool_checks
+  changed_when: false
+  failed_when: false
+  when:
+    - ansible_system in ['Linux', 'Darwin']
+    - lua_tool != 'luarocks'
+
+- name: Install missing LuaRocks tools on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - luarocks
+      - install
+      - "{{ item.lua_tool }}"
+  loop: "{{ unix_lua_tool_checks.results | default([]) }}"
+  loop_control:
+    label: "{{ item.lua_tool }}"
+  when:
+    - ansible_system in ['Linux', 'Darwin']
+    - item.rc != 0
+  changed_when: true
+
+- name: Check installed LuaRocks tools on Windows
+  ansible.windows.win_command:
+    argv:
+      - luarocks.bat
+      - show
+      - "{{ lua_tool }}"
+  loop: "{{ dev_language.tools | default(default_lua_tools) }}"
+  loop_control:
+    loop_var: lua_tool
+    label: "{{ lua_tool }}"
+  register: windows_lua_tool_checks
+  changed_when: false
+  failed_when: false
+  when:
+    - ansible_system == 'Windows'
+    - lua_tool != 'luarocks'
+
+- name: Install missing LuaRocks tools on Windows
+  ansible.windows.win_command:
+    argv:
+      - luarocks.bat
+      - install
+      - "{{ item.lua_tool }}"
+  loop: "{{ windows_lua_tool_checks.results | default([]) }}"
+  loop_control:
+    label: "{{ item.lua_tool }}"
+  when:
+    - ansible_system == 'Windows'
+    - item.rc != 0
+  changed_when: true
+
+- name: Fail on unsupported operating system for Lua
+  ansible.builtin.fail:
+    msg: "Unsupported operating system for Lua install: {{ ansible_system }}"
+  when: ansible_system not in ['Linux', 'Darwin', 'Windows']
