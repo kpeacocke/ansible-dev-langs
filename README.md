@@ -33,7 +33,7 @@ ansible-playbook site.yml
 ```
 
 The default language set includes Python, Temurin Java, the latest Node.js
-JavaScript release, and TypeScript, together with their default tools.
+JavaScript release, TypeScript, and Ruby, together with their default tools.
 
 TypeScript uses the Node.js runtime and installs the latest TypeScript compiler,
 ts-node, and tsx by default. Select it independently, optionally pinning the
@@ -46,6 +46,16 @@ ansible-playbook site.yml -e '{"dev_languages":[
 ```
 
 Use `tools: []` to install only the Node.js runtime for TypeScript.
+
+Ruby installs the latest package-manager release with Bundler, Rake, RuboCop,
+RSpec, and Solargraph by default. Select Ruby alone or use `tools: []` to
+install only its runtime:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"ruby","version":"latest","tools":[]}
+]}'
+```
 
 It also includes the latest stable Rust toolchain with rust-analyzer, rustfmt,
 Clippy, cargo-audit, cargo-deny, and cargo-nextest. Use `tools: []` for a
@@ -171,8 +181,8 @@ ansible-playbook site.yml -e '{"dev_languages":[
 ]}'
 ```
 
-The default JavaScript tools are npm, pnpm, Yarn, TypeScript, ESLint,
-Prettier, and npm-check-updates. Node.js includes npm; the other tools are
+The default JavaScript tools are npm, pnpm, Yarn, ESLint, Prettier, and
+npm-check-updates. Node.js includes npm; the other tools are
 installed globally with the selected Node.js runtime. Use `tools: []` for
 Node.js only.
 

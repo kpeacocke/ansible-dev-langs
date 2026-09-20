@@ -18,6 +18,7 @@ supported_languages:
   - php
   - ada
   - vbscript
+  - ruby
 
 default_python_version: latest
 default_pip_version: latest
@@ -120,6 +121,13 @@ default_vbscript_version: latest
 default_vbscript_tools:
   - cscript
   - wscript
+default_ruby_version: latest
+default_ruby_tools:
+  - bundler
+  - rake
+  - rubocop
+  - rspec
+  - solargraph
 
 # Default selection when no -e override is supplied. Override entirely with:
 #   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'
@@ -144,6 +152,9 @@ dev_languages:
     default: true
   - name: typescript
     version: "{{ default_typescript_version }}"
+    default: true
+  - name: ruby
+    version: "{{ default_ruby_version }}"
     default: true
   - name: go
     version: "{{ default_go_version }}"

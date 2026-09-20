@@ -1,0 +1,119 @@
+---
+- name: Set requested Ruby version
+  ansible.builtin.set_fact:
+    ruby_requested_version: "{{ dev_language.version | default(default_ruby_version) }}"
+
+- name: Require the latest Ruby package-manager release
+  ansible.builtin.assert:
+    that: ruby_requested_version == 'latest'
+    fail_msg: "Only version 'latest' is supported for Ruby."
+    quiet: true
+
+- name: Set Ruby package name for Linux
+  ansible.builtin.set_fact:
+    ruby_linux_package: "{{ 'ruby-full' if ansible_os_family == 'Debian' else 'ruby' }}"
+  when: ansible_system == 'Linux'
+
+- name: Install Ruby on Linux
+  ansible.builtin.package:
+    name: "{{ ruby_linux_package }}"
+    state: present
+  become: true
+  when: ansible_system == 'Linux'
+
+- name: Install Ruby on macOS
+  community.general.homebrew:
+    name: ruby
+    state: present
+  when: ansible_system == 'Darwin'
+
+- name: Check whether Ruby is installed on Windows
+  ansible.windows.win_command: where.exe ruby.exe
+  register: windows_ruby_check
+  changed_when: false
+  failed_when: false
+  when: ansible_system == 'Windows'
+
+- name: Install Ruby on Windows with winget
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - RubyInstallerTeam.RubyWithDevKit
+      - --exact
+      - --accept-source-agreements
+      - --accept-package-agreements
+  when:
+    - ansible_system == 'Windows'
+    - windows_ruby_check.rc != 0
+  changed_when: true
+
+- name: Check installed Ruby development tools on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - gem
+      - list
+      - --installed
+      - --exact
+      - "{{ ruby_tool }}"
+  loop: "{{ dev_language.tools | default(default_ruby_tools) }}"
+  loop_control:
+    loop_var: ruby_tool
+    label: "{{ ruby_tool }}"
+  register: unix_ruby_tool_checks
+  changed_when: false
+  failed_when: false
+  when: ansible_system in ['Linux', 'Darwin']
+
+- name: Install missing Ruby development tools on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - gem
+      - install
+      - --no-document
+      - "{{ item.ruby_tool }}"
+  loop: "{{ unix_ruby_tool_checks.results | default([]) }}"
+  loop_control:
+    label: "{{ item.ruby_tool }}"
+  when:
+    - ansible_system in ['Linux', 'Darwin']
+    - item.rc != 0
+  changed_when: true
+
+- name: Check installed Ruby development tools on Windows
+  ansible.windows.win_command:
+    argv:
+      - gem.cmd
+      - list
+      - --installed
+      - --exact
+      - "{{ ruby_tool }}"
+  loop: "{{ dev_language.tools | default(default_ruby_tools) }}"
+  loop_control:
+    loop_var: ruby_tool
+    label: "{{ ruby_tool }}"
+  register: windows_ruby_tool_checks
+  changed_when: false
+  failed_when: false
+  when: ansible_system == 'Windows'
+
+- name: Install missing Ruby development tools on Windows
+  ansible.windows.win_command:
+    argv:
+      - gem.cmd
+      - install
+      - --no-document
+      - "{{ item.ruby_tool }}"
+  loop: "{{ windows_ruby_tool_checks.results | default([]) }}"
+  loop_control:
+    label: "{{ item.ruby_tool }}"
+  when:
+    - ansible_system == 'Windows'
+    - item.rc != 0
+  changed_when: true
+
+- name: Fail on unsupported operating system for Ruby
+  ansible.builtin.fail:
+    msg: "Unsupported operating system for Ruby install: {{ ansible_system }}"
+  when: ansible_system not in ['Linux', 'Darwin', 'Windows']
