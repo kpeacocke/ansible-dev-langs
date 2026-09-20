@@ -26,5 +26,6 @@
   ansible.builtin.include_tasks: "{{ role_path }}/tasks/javascript/tools.yml"
   vars:
     dev_language:
+      name: javascript
       tools: "{{ typescript_npm_tools }}"
   when: typescript_selected_tools | length > 0

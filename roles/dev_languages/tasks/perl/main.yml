@@ -18,6 +18,24 @@
   become: true
   when: ansible_system == 'Linux'
 
+- name: Set Perl native build dependencies for Linux
+  ansible.builtin.set_fact:
+    perl_build_dependencies: >-
+      {{ ['build-essential', 'libperl-dev'] if ansible_os_family == 'Debian' else
+         (['base-devel'] if ansible_distribution == 'Archlinux' else
+          (['build-base', 'perl-dev'] if ansible_distribution == 'Alpine' else
+           ['gcc', 'make', 'perl-devel'])) }}
+  when: ansible_system == 'Linux'
+
+- name: Install Perl native build dependencies on Linux
+  ansible.builtin.package:
+    name: "{{ perl_build_dependencies }}"
+    state: present
+  become: true
+  when:
+    - ansible_system == 'Linux'
+    - dev_language.tools | default(default_perl_tools) | length > 0
+
 - name: Install Perl on macOS
   community.general.homebrew:
     name: perl

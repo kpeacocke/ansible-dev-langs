@@ -136,7 +136,7 @@ default_lua_tools:
   - luarocks
   - luacheck
   - busted
-  - luaformatter
+  - stylua
 default_swift_version: latest
 default_swift_tools:
   - swift-format

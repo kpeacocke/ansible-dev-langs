@@ -93,7 +93,7 @@
   ansible.builtin.command:
     argv:
       - "{{ swiftly_home }}/bin/{{ swift_tool }}"
-      - --version
+      - "{{ '--help' if swift_tool == 'sourcekit-lsp' else '--version' }}"
   loop: "{{ swift_selected_tools }}"
   loop_control:
     loop_var: swift_tool
@@ -105,7 +105,7 @@
   ansible.builtin.command:
     argv:
       - "{{ swift_tool }}"
-      - --version
+      - "{{ '--help' if swift_tool == 'sourcekit-lsp' else '--version' }}"
   loop: "{{ swift_selected_tools }}"
   loop_control:
     loop_var: swift_tool
@@ -117,7 +117,7 @@
   ansible.windows.win_command:
     argv:
       - "{{ swift_tool }}.exe"
-      - --version
+      - "{{ '--help' if swift_tool == 'sourcekit-lsp' else '--version' }}"
   loop: "{{ swift_selected_tools }}"
   loop_control:
     loop_var: swift_tool

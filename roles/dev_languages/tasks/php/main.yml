@@ -23,6 +23,24 @@
   become: true
   when: ansible_system == 'Linux'
 
+- name: Set PHP XML extension package for Linux
+  ansible.builtin.set_fact:
+    php_linux_xml_package: >-
+      {{ 'php83-dom' if ansible_distribution == 'Alpine' else
+         ('php-xml' if ansible_os_family in ['Debian', 'RedHat'] else omit) }}
+  when: ansible_system == 'Linux'
+
+- name: Install PHP DOM extension for PHPUnit on Linux
+  ansible.builtin.package:
+    name: "{{ php_linux_xml_package }}"
+    state: present
+  become: true
+  when:
+    - ansible_system == 'Linux'
+    - php_linux_xml_package is defined
+    - php_linux_xml_package != omit
+    - "'phpunit/phpunit' in (dev_language.tools | default(default_php_tools))"
+
 - name: Install PHP on macOS
   community.general.homebrew:
     name: php
@@ -118,15 +136,18 @@
       - composer
       - global
       - require
-      - "{{ item.php_tool }}"
+      - "{{ item.php_tool ~ ':^12' if item.php_tool == 'phpunit/phpunit' else item.php_tool }}"
       - --no-interaction
       - --no-progress
-  loop: "{{ unix_php_tool_checks.results | default([]) }}"
+  loop: >-
+    {{ unix_php_tool_checks.results | default([])
+       | selectattr('rc', 'defined')
+       | selectattr('rc', 'ne', 0)
+       | list }}
   loop_control:
     label: "{{ item.php_tool }}"
   when:
     - ansible_system in ['Linux', 'Darwin']
-    - item.rc != 0
   changed_when: true
 
 - name: Check installed PHP Composer tools on Windows
@@ -154,15 +175,18 @@
       - composer.bat
       - global
       - require
-      - "{{ item.php_tool }}"
+      - "{{ item.php_tool ~ ':^12' if item.php_tool == 'phpunit/phpunit' else item.php_tool }}"
       - --no-interaction
       - --no-progress
-  loop: "{{ windows_php_tool_checks.results | default([]) }}"
+  loop: >-
+    {{ windows_php_tool_checks.results | default([])
+       | selectattr('rc', 'defined')
+       | selectattr('rc', 'ne', 0)
+       | list }}
   loop_control:
     label: "{{ item.php_tool }}"
   when:
     - ansible_system == 'Windows'
-    - item.rc != 0
   changed_when: true
 
 - name: Add Composer global tools to Unix shell profiles

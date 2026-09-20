@@ -1,187 +1,166 @@
-# ansible-dev-langs
+# Ansible Development Languages
 
-Idempotent, platform-agnostic Ansible playbook that installs development
-language toolchains on a workstation. Auto-detects OS family/distribution,
-architecture (x86_64/arm64/aarch64), and installs the requested versions
-correctly on PATH. Installs Python tooling and optional C compiler support.
+An idempotent, cross-platform Ansible role for installing development language
+runtimes, compilers, package managers, and common developer tools. It supports
+side-by-side versions, per-language tool selection, PATH configuration, and
+optional project setup without requiring a separate playbook for each operating
+system.
 
-## Supported platforms
+## What it does
 
-- Linux: Debian/Ubuntu, RHEL/CentOS/Fedora/Rocky/Alma, SUSE, Alpine, Arch
-  (x86_64 and arm64/aarch64) — installed via [pyenv](https://github.com/pyenv/pyenv),
-  which builds from source so it works identically across distros/arches.
-- macOS: Intel and Apple Silicon — same pyenv approach, build deps via Homebrew.
-- Windows: x64 and ARM64 — official python.org installer, one directory per
-  version under `C:\DevLangs`, added to the machine `PATH`.
+- Detects the operating system, Linux distribution, CPU architecture, and
+  Windows versus Unix installation strategy.
+- Installs the requested entries from `dev_languages` and validates language
+  names before changing the host.
+- Keeps supported runtimes side by side and lets you mark one version as the
+  default on PATH.
+- Installs platform-appropriate build dependencies and developer tools.
+- Is safe to run repeatedly: package tasks use present state, existing runtime
+  directories are reused, and PATH changes are managed idempotently.
+
+## Supported languages
+
+| Language | Key | Default status | Default tools or notes |
+| --- | --- | --- | --- |
+| Python | `python` | Included | uv, Poetry, Hatch, pytest, Ruff, mypy, debugpy, IPython |
+| Java | `java` | Included | Temurin JDK, Maven, Gradle |
+| JavaScript | `javascript` | Included | Node.js, npm, pnpm, Yarn, ESLint, Prettier, npm-check-updates |
+| TypeScript | `typescript` | Included | TypeScript, ts-node, tsx; uses Node.js |
+| Ruby | `ruby` | Included | Bundler, Rake, RuboCop, RSpec, Solargraph |
+| Go | `go` | Included | gopls, Delve, govulncheck, gofumpt |
+| Rust | `rust` | Included | rust-analyzer, rustfmt, Clippy, cargo-audit, cargo-deny, cargo-nextest |
+| PowerShell | `powershell` | Included | PSScriptAnalyzer, Pester, PSReadLine |
+| C | `c` | Optional | Native compiler plus build, formatting, lint, and pkg-config tools |
+| C++ | `c++` | Optional | C toolchain plus clangd, GDB, and ccache |
+| C# | `c#` | Optional | .NET SDK, dotnet-format, CSharpier, dotnet-outdated-tool |
+| Visual Basic | `visual_basic` | Optional | .NET SDK, dotnet-format, dotnet-outdated-tool |
+| Perl | `perl` | Optional | Perl::Critic, Perl::Tidy, Perl::LanguageServer |
+| R | `r` | Optional | pak, renv, lintr, styler, languageserver, testthat |
+| PHP | `php` | Optional | Composer, PHPUnit 12, PHP-CS-Fixer, PHPStan, Psalm, Rector |
+| Ada | `ada` | Optional | GNAT, GPRbuild, gnatcheck, gnatpp |
+| VBScript | `vbscript` | Optional | Windows `cscript` and `wscript`; Windows only |
+| Lua | `lua` | Optional | LuaRocks, luacheck, busted, StyLua |
+| Swift | `swift` | Optional | swift-format and SourceKit-LSP |
+| Objective-C | `objective_c` | Optional | Clang, Foundation support where available, clang-format, clang-tidy |
+
+The included set is Python, Java, JavaScript, TypeScript, Ruby, Go, Rust, and
+PowerShell. Optional languages are installed by adding an entry to
+`dev_languages`.
+
+## Platform support
+
+- **Linux:** Debian/Ubuntu, RHEL/CentOS/Fedora/Rocky/Alma, SUSE, Alpine, and
+  Arch on x86_64 and arm64/aarch64. Python is built through pyenv so versions
+  behave consistently across distributions and architectures.
+- **macOS:** Intel and Apple Silicon. Build dependencies are installed with
+  Homebrew and Python uses pyenv.
+- **Windows:** x64 and ARM64 where the upstream package supports it. Python,
+  Java, Node.js, Go, PowerShell, and other runtimes use native installers or
+  official release packages under `C:\DevLangs` as appropriate.
+
+Some ecosystems have platform limits. For example, Apple frameworks such as
+SwiftUI and UIKit require macOS and Xcode, and Windows VBScript is restored
+only where the Windows feature is available.
 
 ## Requirements
+
+On the control machine:
 
 ```bash
 python3 -m pip install ansible
 ansible-galaxy collection install -r requirements.yml
 ```
 
-For Windows targets, ensure WinRM is configured and reachable, and that the
-required Ansible collections are installed from `requirements.yml`.
+The repository includes an `ansible.cfg` that points to
+`inventory/hosts.ini`. For Windows targets, configure WinRM and install the
+collections from `requirements.yml` before running the playbook. The target
+must also have the privileges needed to install OS packages and update PATH.
 
-## Usage
+## Quick start
 
-Install the default language set (Python, default version) on localhost:
+The default inventory targets the local machine:
 
 ```bash
 ansible-playbook site.yml
 ```
 
-The default language set includes Python, Temurin Java, the latest Node.js
-JavaScript release, TypeScript, and Ruby, together with their default tools.
+Preview the hosts and collected facts first:
 
-TypeScript uses the Node.js runtime and installs the latest TypeScript compiler,
-ts-node, and tsx by default. Select it independently, optionally pinning the
-Node.js runtime used for its tools:
+```bash
+ansible all --list-hosts
+ansible all -m ansible.builtin.setup
+```
+
+Run in check mode when the platform modules support it:
+
+```bash
+ansible-playbook site.yml --check --diff
+```
+
+After installation, open a new shell so PATH changes are loaded, then verify
+the tools you selected:
+
+```bash
+python3 --version
+java -version
+node --version
+go version
+rustc --version
+pwsh --version
+```
+
+## Configuration model
+
+The role is driven by `dev_languages`, a list of dictionaries. Each entry
+requires `name`; the other fields are optional and language-specific.
+
+```yaml
+dev_languages:
+  - name: python
+    version: "3.12.4"
+    pip_version: latest
+    pipx_version: latest
+    tools:
+      - uv
+      - pytest
+      - ruff
+  - name: java
+    version: "21"
+    distribution: temurin
+    default: true
+```
+
+Common fields:
+
+| Field | Meaning |
+| --- | --- |
+| `name` | One of the keys in the supported languages table. Required. |
+| `version` | Requested runtime version. `latest` is supported broadly; Java also supports `latest_lts`. |
+| `tools` | Replaces the language's default tool list. Use `[]` for runtime/compiler only. |
+| `default` | Makes this entry the preferred version when the language supports side-by-side defaults. |
+
+An entry with `tools: []` deliberately installs no optional tools. Omitting
+`tools` installs that language's defaults. If you declare the same language
+multiple times, use distinct versions and mark at most one as `default`.
+
+## Common recipes
+
+### Choose a custom language set
+
+Extra vars replace the default `dev_languages` list for that run:
 
 ```bash
 ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"typescript","version":"latest","node_version":"latest","default":true}
+  {"name":"python","version":"3.12.4","tools":["uv","pytest","ruff"]},
+  {"name":"javascript","version":"latest_lts","default":true},
+  {"name":"c","tools":[]}
 ]}'
 ```
 
-Use `tools: []` to install only the Node.js runtime for TypeScript.
+For repeatable setup, put the same YAML in `group_vars/all.yml` or a host/group
+vars file instead of passing JSON on the command line.
 
-Ruby installs the latest package-manager release with Bundler, Rake, RuboCop,
-RSpec, and Solargraph by default. Select Ruby alone or use `tools: []` to
-install only its runtime:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"ruby","version":"latest","tools":[]}
-]}'
-```
-
-It also includes the latest stable Rust toolchain with rust-analyzer, rustfmt,
-Clippy, cargo-audit, cargo-deny, and cargo-nextest. Use `tools: []` for a
-Rust-only toolchain.
-
-The default language set also includes the latest PowerShell release with
-PSScriptAnalyzer, Pester, and PSReadLine. Use `tools: []` for PowerShell only.
-
-Perl is supported but optional. Enable the latest package-manager release with:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"perl","version":"latest"}
-]}'
-```
-
-Its default tools are Perl::Critic, Perl::Tidy, and Perl::LanguageServer. Use
-`tools: []` to install Perl without additional packages.
-
-C#/.NET is supported but optional. Enable it with:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"c#","version":"latest","default":true}
-]}'
-```
-
-Its default tools are dotnet-format, CSharpier, and dotnet-outdated-tool.
-
-Visual Basic/.NET is also supported but optional. Enable it with:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"visual_basic","version":"latest","default":true}
-]}'
-```
-
-Its default tools are dotnet-format and dotnet-outdated-tool. Use
-`tools: []` for the .NET SDK only.
-
-R is supported but optional. Enable the latest package-manager release with:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"r","version":"latest"}
-]}'
-```
-
-Its default CRAN tools are pak, renv, lintr, styler, languageserver, and
-testthat. Use `tools: []` to install R without additional packages.
-
-PHP is supported but optional. Enable the latest package-manager release with:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"php","version":"latest"}
-]}'
-```
-
-Its default Composer tools are PHPUnit, PHP-CS-Fixer, PHPStan, Psalm, and
-Rector. Use `tools: []` to install PHP without Composer or additional tools.
-
-Ada is supported but optional. Enable the latest package-manager GNAT release
-with:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"ada","version":"latest"}
-]}'
-```
-
-Its default tools are GPRbuild, gnatcheck, and gnatpp. Use `tools: []` to
-install the GNAT compiler without additional tools.
-
-VBScript is supported but optional on Windows only. Enable the current
-Windows-provided VBScript capability with:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"vbscript","version":"latest"}
-]}'
-```
-
-Its default script hosts are cscript and wscript. On Windows versions where
-VBScript is a Feature on Demand, the playbook restores that capability.
-
-Lua is supported but optional. Enable the latest package-manager release with:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"lua","version":"latest"}
-]}'
-```
-
-Its default LuaRocks tools are luacheck, busted, and luaformatter. Use
-`tools: []` to install Lua without LuaRocks or additional tools.
-
-Swift is supported but optional on Linux, macOS, and Windows. It uses Swiftly
-on Linux, Homebrew on macOS, and the official Swift WinGet package on Windows:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"swift","version":"latest"}
-]}'
-```
-
-Its default tools are swift-format and SourceKit-LSP. Apple platform frameworks
-such as SwiftUI and UIKit require macOS and Xcode.
-
-Objective-C is supported but optional on Linux, macOS, and Windows. Linux gets
-the GNU Objective-C runtime and GNUstep Foundation; macOS uses Clang; Windows
-supports Clang syntax but does not provide Apple Foundation frameworks:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"objective_c","version":"latest"}
-]}'
-```
-
-Its default tools provide Foundation support where available, clang-format, and
-clang-tidy. Use `tools: []` for the compiler/runtime only.
-
-It also includes the latest Go release with `gopls`, Delve, `govulncheck`, and
-gofumpt. Use `tools: []` for a Go runtime only.
-
-Install multiple Temurin JDK versions and select the default:
+### Install multiple Java versions
 
 ```bash
 ansible-playbook site.yml -e '{"dev_languages":[
@@ -190,97 +169,11 @@ ansible-playbook site.yml -e '{"dev_languages":[
 ]}'
 ```
 
-Use `version: "latest"` for the newest GA feature release or
-`version: "latest_lts"` for the newest Adoptium LTS release. Java uses Temurin
-archives from Adoptium and installs each version side by side.
+Java uses Temurin archives from Adoptium and installs each version under the
+configured Java root. Use `latest` for the newest GA feature release or
+`latest_lts` for the newest Adoptium LTS release.
 
-Install the C compiler alongside Python:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"python","version":"latest"},
-  {"name":"c"}
-]}'
-```
-
-C uses the native package manager: GCC on Linux/macOS and LLVM/Clang via
-winget on Windows.
-
-C++ additionally installs clangd, GDB, and ccache by default. Override the
-tool list with `tools: []` or a custom list in the C++ entry.
-
-Install JavaScript through Node.js:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"javascript","version":"latest_lts","default":true}
-]}'
-```
-
-The default JavaScript tools are npm, pnpm, Yarn, ESLint, Prettier, and
-npm-check-updates. Node.js includes npm; the other tools are
-installed globally with the selected Node.js runtime. Use `tools: []` for
-Node.js only.
-
-Pin a Node.js version for project managers by creating `.nvmrc` and
-`.node-version` files:
-
-```yaml
-dev_languages:
-  - name: javascript
-    version: latest
-    default: true
-    projects:
-      - path: /workspace/my-app
-```
-
-The project directory must already exist.
-
-Install C++ with the same toolchain:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"c++"}
-]}'
-```
-
-By default, C also installs CMake, Ninja, formatting/lint tools, and
-pkg-config. Install only the compiler with an empty tool list:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"c","tools":[]}
-]}'
-```
-
-Select Python and its optional tooling versions via extra vars:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.12.4","pip_version":"25.0","pipx_version":"1.7.1"}]}'
-```
-
-The default language set installs the latest stable Python, pip, and pipx.
-Omit `pip_version` or `pipx_version` when that tool is not needed:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"python","version":"3.12.4","pip_version":"25.0"}
-]}'
-```
-
-Python also installs common development tools by default: uv, Poetry, Hatch,
-pytest, Ruff, mypy, debugpy, and IPython. Override the list or disable them:
-
-```bash
-ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"python","tools":["uv","pytest","ruff"]}
-]}'
-```
-
-Use `"tools":[]` to install no additional Python tools.
-
-Create virtual environments by adding `venvs` to a Python entry. Each
-environment is created with that entry's Python interpreter:
+### Configure Python and virtual environments
 
 ```bash
 ansible-playbook site.yml -e '{"dev_languages":[
@@ -290,42 +183,118 @@ ansible-playbook site.yml -e '{"dev_languages":[
 ]}'
 ```
 
-The target directory's parent must already exist. Virtual environments are
-created with pip by Python's standard `venv` module.
+The parent directory of each virtual environment must already exist. On
+Windows, use a Windows path such as `C:\\Users\\me\\.venvs\\project`.
 
-Install multiple versions/languages in one run (as more languages are added):
+### Configure JavaScript project version files
+
+The `projects` option writes `.nvmrc` and `.node-version` in existing project
+directories:
+
+```yaml
+dev_languages:
+  - name: javascript
+    version: latest
+    default: true
+    projects:
+      - path: /workspace/my-app
+      - path: /workspace/another-app
+        version_files:
+          - .nvmrc
+```
+
+The project directories must already exist. TypeScript uses Node.js as its
+runtime and accepts `node_version` independently from the TypeScript version:
 
 ```bash
 ansible-playbook site.yml -e '{"dev_languages":[
-  {"name":"python","version":"3.12.4"},
-  {"name":"python","version":"3.11.9"}
+  {"name":"typescript","version":"5.7.3","node_version":"latest_lts","tools":["typescript","tsx"]}
 ]}'
 ```
 
-Target remote hosts by adding them to `inventory/hosts.ini` and running:
+### Install an optional language
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"go","version":"latest","tools":[]},
+  {"name":"lua","version":"latest"},
+  {"name":"swift","version":"latest"}
+]}'
+```
+
+The role validates every `name`, so a typo fails early with the supported
+language list rather than partially installing an unknown language.
+
+## Remote hosts
+
+Add hosts to `inventory/hosts.ini`, then target a group:
+
+```ini
+[linux]
+workstation1.example.com ansible_user=devuser
+
+[windows]
+win-workstation.example.com
+
+[windows:vars]
+ansible_connection=winrm
+ansible_winrm_transport=ntlm
+ansible_port=5986
+ansible_winrm_server_cert_validation=ignore
+```
+
+Run against a selected group or host:
 
 ```bash
 ansible-playbook site.yml -l linux
-ansible-playbook site.yml -l windows
+ansible-playbook site.yml -l win-workstation.example.com
 ```
 
-## Adding a new language
+Keep credentials outside the repository, preferably in Ansible Vault or your
+normal secret-management system.
 
-1. Add its name to `supported_languages` in [group_vars/all.yml](group_vars/all.yml).
-2. Create `roles/dev_languages/tasks/<name>/main.yml` that dispatches to
-   `linux.yml` / `macos.yml` / `windows.yml` based on `ansible_system`,
-   following the pattern used in `tasks/python/`.
-3. Each OS-specific task file must be idempotent (check before installing)
-   and must add the installed version's binaries to PATH (user shell rc
-   files on Linux/macOS, `ansible.windows.win_path` on Windows).
-4. If Linux build dependencies differ per distro, add entries to
-   `roles/dev_languages/vars/<family-or-distro>.yml`.
+## Paths and overrides
 
-## Idempotency notes
+The main defaults are defined in
+`roles/dev_languages/defaults/main.yml` and can be overridden in vars files or
+extra vars:
 
-- Package installs use `state: present`, safe to re-run.
-- pyenv/version builds are skipped if the version directory already exists.
-- Windows installs are skipped if the version's install directory already
-  contains `python.exe`.
-- PATH updates use `blockinfile` (Linux/macOS) and `win_path` (Windows),
-  both of which are safe to apply repeatedly.
+| Variable | Unix default | Windows default |
+| --- | --- | --- |
+| `pyenv_root` | `{{ ansible_env.HOME }}/.pyenv` | Not used |
+| `java_root` | `{{ ansible_env.HOME }}/.jdks` | `C:\\DevLangs\\Java` |
+| `node_root` | `{{ ansible_env.HOME }}/.nodejs` | `C:\\DevLangs\\Node` |
+| `go_root` | `{{ ansible_env.HOME }}/.go/versions` | `C:\\DevLangs\\Go` |
+| `powershell_root` | `{{ ansible_env.HOME }}/.powershell/versions` | `C:\\DevLangs\\PowerShell` |
+| `windows_install_root` | Not used | `C:\\DevLangs` |
+
+## Troubleshooting
+
+- **Unsupported language:** use the exact key from the supported languages
+  table, including `c++`, `c#`, and `objective_c`.
+- **Command not found after success:** start a new shell or source the shell
+  configuration file updated by the role.
+- **Python build failure:** confirm the target can install OS build
+  dependencies and has network access to pyenv and Python source downloads.
+- **Windows connection failure:** test WinRM separately with
+  `ansible windows -m ansible.windows.win_ping`.
+- **A project version file was not written:** confirm the project directory
+  exists on the target, not only on the control machine.
+- **A tool is missing:** specifying `tools` replaces the defaults; add the tool
+  explicitly or remove `tools` from the entry.
+
+## Adding a language
+
+1. Add its key to `supported_languages` in `group_vars/all.yml`.
+2. Add `roles/dev_languages/tasks/<name>/main.yml` and dispatch to the relevant
+   platform task files.
+3. Add platform-specific build dependencies to `roles/dev_languages/vars/` when
+   needed.
+4. Make installation and PATH changes idempotent, and document the new entry in
+   the supported-language table.
+5. Run syntax checks on every supported platform path you can exercise.
+
+## License
+
+No license file is currently included in this repository. Add one before
+redistributing the project.
