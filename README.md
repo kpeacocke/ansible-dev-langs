@@ -108,6 +108,18 @@ ansible-playbook site.yml -e '{"dev_languages":[
 Its default tools are GPRbuild, gnatcheck, and gnatpp. Use `tools: []` to
 install the GNAT compiler without additional tools.
 
+VBScript is supported but optional on Windows only. Enable the current
+Windows-provided VBScript capability with:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"vbscript","version":"latest"}
+]}'
+```
+
+Its default script hosts are cscript and wscript. On Windows versions where
+VBScript is a Feature on Demand, the playbook restores that capability.
+
 It also includes the latest Go release with `gopls`, Delve, `govulncheck`, and
 gofumpt. Use `tools: []` for a Go runtime only.
 

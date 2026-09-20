@@ -1,0 +1,46 @@
+---
+- name: Set requested VBScript version and tools
+  ansible.builtin.set_fact:
+    vbscript_requested_version: "{{ dev_language.version | default(default_vbscript_version) }}"
+    vbscript_selected_tools: "{{ dev_language.tools | default(default_vbscript_tools) }}"
+
+- name: Require the latest Windows-provided VBScript capability
+  ansible.builtin.assert:
+    that: vbscript_requested_version == 'latest'
+    fail_msg: "Only version 'latest' is supported for VBScript."
+    quiet: true
+
+- name: Require Windows for VBScript
+  ansible.builtin.assert:
+    that: ansible_system == 'Windows'
+    fail_msg: "VBScript is supported only on Windows."
+    quiet: true
+
+- name: Check whether the VBScript console host is available
+  ansible.windows.win_command: where.exe cscript.exe
+  register: windows_vbscript_check
+  changed_when: false
+  failed_when: false
+
+- name: Restore the Windows VBScript capability
+  ansible.windows.win_command:
+    argv:
+      - dism.exe
+      - /Online
+      - /Add-Capability
+      - /CapabilityName:VBSCRIPT~~~~0.0.1.0
+      - /NoRestart
+  when: windows_vbscript_check.rc != 0
+  changed_when: true
+
+- name: Validate requested VBScript script hosts
+  ansible.windows.win_command:
+    argv:
+      - where.exe
+      - "{{ vbscript_tool }}.exe"
+  loop: "{{ vbscript_selected_tools }}"
+  loop_control:
+    loop_var: vbscript_tool
+    label: "{{ vbscript_tool }}"
+  changed_when: false
+  when: vbscript_selected_tools | length > 0

@@ -16,6 +16,7 @@ supported_languages:
   - r
   - php
   - ada
+  - vbscript
 
 default_python_version: latest
 default_pip_version: latest
@@ -110,6 +111,10 @@ default_ada_tools:
   - build
   - check
   - format
+default_vbscript_version: latest
+default_vbscript_tools:
+  - cscript
+  - wscript
 
 # Default selection when no -e override is supplied. Override entirely with:
 #   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'
