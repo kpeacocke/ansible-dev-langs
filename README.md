@@ -32,8 +32,20 @@ Install the default language set (Python, default version) on localhost:
 ansible-playbook site.yml
 ```
 
-The default language set includes Python, Temurin Java, and the latest Node.js
-JavaScript release, together with their default tools.
+The default language set includes Python, Temurin Java, the latest Node.js
+JavaScript release, and TypeScript, together with their default tools.
+
+TypeScript uses the Node.js runtime and installs the latest TypeScript compiler,
+ts-node, and tsx by default. Select it independently, optionally pinning the
+Node.js runtime used for its tools:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"typescript","version":"latest","node_version":"latest","default":true}
+]}'
+```
+
+Use `tools: []` to install only the Node.js runtime for TypeScript.
 
 It also includes the latest stable Rust toolchain with rust-analyzer, rustfmt,
 Clippy, cargo-audit, cargo-deny, and cargo-nextest. Use `tools: []` for a

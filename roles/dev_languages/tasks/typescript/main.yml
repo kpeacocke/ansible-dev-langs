@@ -1,0 +1,30 @@
+---
+- name: Set requested TypeScript and Node.js versions
+  ansible.builtin.set_fact:
+    typescript_requested_version: "{{ dev_language.version | default(default_typescript_version) }}"
+    typescript_node_version: "{{ dev_language.node_version | default(default_javascript_version) }}"
+    typescript_selected_tools: "{{ dev_language.tools | default(default_typescript_tools) }}"
+    typescript_default: "{{ dev_language.default | default(false) | bool }}"
+
+- name: Set TypeScript npm tool packages
+  ansible.builtin.set_fact:
+    typescript_npm_tools: >-
+      {{ ([('typescript@' ~ typescript_requested_version)
+           if typescript_requested_version != 'latest' else 'typescript']
+          + (typescript_selected_tools | reject('equalto', 'typescript') | list)) }}
+
+- name: Install the Node.js runtime for TypeScript
+  ansible.builtin.include_tasks: "{{ role_path }}/tasks/javascript/main.yml"
+  vars:
+    dev_language:
+      name: javascript
+      version: "{{ typescript_node_version }}"
+      tools: []
+      default: "{{ typescript_default }}"
+
+- name: Install TypeScript tools
+  ansible.builtin.include_tasks: "{{ role_path }}/tasks/javascript/tools.yml"
+  vars:
+    dev_language:
+      tools: "{{ typescript_npm_tools }}"
+  when: typescript_selected_tools | length > 0

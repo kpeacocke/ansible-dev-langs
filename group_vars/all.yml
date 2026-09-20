@@ -7,6 +7,7 @@ supported_languages:
   - c++
   - java
   - javascript
+  - typescript
   - go
   - rust
   - powershell
@@ -53,10 +54,14 @@ default_javascript_tools:
   - npm
   - pnpm
   - yarn
-  - typescript
   - eslint
   - prettier
   - npm-check-updates
+default_typescript_version: latest
+default_typescript_tools:
+  - typescript
+  - ts-node
+  - tsx
 default_go_version: latest
 default_go_tools:
   - gopls
@@ -136,6 +141,9 @@ dev_languages:
     default: true
   - name: javascript
     version: "{{ default_javascript_version }}"
+    default: true
+  - name: typescript
+    version: "{{ default_typescript_version }}"
     default: true
   - name: go
     version: "{{ default_go_version }}"
