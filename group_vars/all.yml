@@ -73,6 +73,7 @@ default_powershell_tools:
   - PSScriptAnalyzer
   - Pester
   - PSReadLine
+default_perl_version: latest
 default_perl_tools:
   - Perl::Critic
   - Perl::Tidy

@@ -1,4 +1,14 @@
 ---
+- name: Set requested Perl version
+  ansible.builtin.set_fact:
+    perl_requested_version: "{{ dev_language.version | default(default_perl_version) }}"
+
+- name: Require the latest Perl package-manager release
+  ansible.builtin.assert:
+    that: perl_requested_version == 'latest'
+    fail_msg: "Only version 'latest' is supported for Perl."
+    quiet: true
+
 - name: Install Perl on Linux
   ansible.builtin.package:
     name:
