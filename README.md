@@ -96,6 +96,18 @@ ansible-playbook site.yml -e '{"dev_languages":[
 Its default Composer tools are PHPUnit, PHP-CS-Fixer, PHPStan, Psalm, and
 Rector. Use `tools: []` to install PHP without Composer or additional tools.
 
+Ada is supported but optional. Enable the latest package-manager GNAT release
+with:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"ada","version":"latest"}
+]}'
+```
+
+Its default tools are GPRbuild, gnatcheck, and gnatpp. Use `tools: []` to
+install the GNAT compiler without additional tools.
+
 It also includes the latest Go release with `gopls`, Delve, `govulncheck`, and
 gofumpt. Use `tools: []` for a Go runtime only.
 

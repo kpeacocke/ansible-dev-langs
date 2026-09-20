@@ -1,0 +1,85 @@
+---
+- name: Set requested Ada version
+  ansible.builtin.set_fact:
+    ada_requested_version: "{{ dev_language.version | default(default_ada_version) }}"
+    ada_selected_tools: "{{ dev_language.tools | default(default_ada_tools) }}"
+
+- name: Require the latest Ada package-manager release
+  ansible.builtin.assert:
+    that: ada_requested_version == 'latest'
+    fail_msg: "Only version 'latest' is supported for Ada."
+    quiet: true
+
+- name: Set Ada package names for Linux
+  ansible.builtin.set_fact:
+    ada_linux_compiler_package: >-
+      {{ 'gcc-ada' if ansible_distribution == 'Archlinux' else
+         ('gcc-gnat' if ansible_distribution == 'Alpine' else 'gnat') }}
+    ada_linux_tool_packages:
+      build:
+        - gprbuild
+      check: []
+      format: []
+  when: ansible_system == 'Linux'
+
+- name: Install Ada compiler on Linux
+  ansible.builtin.package:
+    name: "{{ ada_linux_compiler_package }}"
+    state: present
+  become: true
+  when: ansible_system == 'Linux'
+
+- name: Install Ada development tools on Linux
+  ansible.builtin.package:
+    name: "{{ ada_linux_tool_packages[ada_tool] }}"
+    state: present
+  become: true
+  loop: "{{ ada_selected_tools }}"
+  loop_control:
+    loop_var: ada_tool
+    label: "{{ ada_tool }}"
+  when:
+    - ansible_system == 'Linux'
+    - ada_tool in ada_linux_tool_packages
+    - ada_linux_tool_packages[ada_tool] | length > 0
+
+- name: Install Ada compiler on macOS
+  community.general.homebrew:
+    name: gnat
+    state: present
+  when: ansible_system == 'Darwin'
+
+- name: Install Ada build tools on macOS
+  community.general.homebrew:
+    name: gprbuild
+    state: present
+  when:
+    - ansible_system == 'Darwin'
+    - "'build' in ada_selected_tools"
+
+- name: Check whether GNAT is installed on Windows
+  ansible.windows.win_command: where.exe gnatmake.exe
+  register: windows_gnat_check
+  changed_when: false
+  failed_when: false
+  when: ansible_system == 'Windows'
+
+- name: Install GNAT on Windows with winget
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - AdaCore.GNAT
+      - --exact
+      - --accept-source-agreements
+      - --accept-package-agreements
+  when:
+    - ansible_system == 'Windows'
+    - windows_gnat_check.rc != 0
+  changed_when: true
+
+- name: Fail on unsupported operating system for Ada
+  ansible.builtin.fail:
+    msg: "Unsupported operating system for Ada install: {{ ansible_system }}"
+  when: ansible_system not in ['Linux', 'Darwin', 'Windows']
