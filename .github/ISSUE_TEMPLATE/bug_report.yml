@@ -1,0 +1,33 @@
+name: Bug report
+description: Report a reproducible problem with the role or playbook.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please remove credentials, private hostnames, and sensitive inventory data before submitting.
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened?
+      description: Tell us what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, architecture, and Ansible version if relevant.
+      placeholder: macOS 15, Apple Silicon, Ansible 2.19
+    validations:
+      required: false
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Share the command, dev_languages entry, or error output that shows the problem. Remove secrets.
+      render: shell
+    validations:
+      required: false

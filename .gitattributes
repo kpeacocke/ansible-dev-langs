@@ -1,0 +1,30 @@
+# Keep source and configuration files portable across platforms.
+* text=auto eol=lf
+
+# Explicit text formats used by this repository.
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+*.json text eol=lf
+
+# Preserve executable intent for shell scripts added later.
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Windows-native scripts should keep Windows line endings.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Common binary assets should never be treated as text.
+*.7z binary
+*.gif binary
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
+*.png binary
+*.tar binary
+*.gz binary
+*.zip binary

@@ -296,5 +296,5 @@ extra vars:
 
 ## License
 
-No license file is currently included in this repository. Add one before
-redistributing the project.
+This project is distributed under the MIT License. See [LICENSE](LICENSE) for
+the full text.

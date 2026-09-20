@@ -1,0 +1,67 @@
+# Operating-system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+
+# Editor and IDE user files
+.idea/
+*.swp
+*.swo
+*~
+
+# Ansible runtime output
+*.retry
+.ansible/
+ansible.log
+
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+.vault-password
+.vault-password.*
+.vault_pass
+.vault_pass.*
+
+# Python tooling and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hatch/
+.tox/
+.nox/
+.venv/
+venv/
+env/
+ENV/
+
+# JavaScript and TypeScript tooling
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+.yarn-cache/
+.parcel-cache/
+.turbo/
+.next/
+dist/
+build/
+coverage/
+
+# Native, JVM, Ruby, and Swift build output
+.gradle/
+target/
+.bundle/
+/vendor/bundle/
+.build/
+DerivedData/
+
+# Local-only inventory variants
+inventory/*.local.ini
+inventory/*.local.yml
+inventory/*.local.yaml
