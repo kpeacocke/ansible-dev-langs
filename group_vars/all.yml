@@ -13,6 +13,7 @@ supported_languages:
   - perl
   - c#
   - visual_basic
+  - r
 
 default_python_version: latest
 default_pip_version: latest
@@ -85,6 +86,14 @@ default_visual_basic_version: latest
 default_visual_basic_tools:
   - dotnet-format
   - dotnet-outdated-tool
+default_r_version: latest
+default_r_tools:
+  - pak
+  - renv
+  - lintr
+  - styler
+  - languageserver
+  - testthat
 
 # Default selection when no -e override is supplied. Override entirely with:
 #   ansible-playbook site.yml -e '{"dev_languages":[{"name":"python","version":"3.11.9"}]}'

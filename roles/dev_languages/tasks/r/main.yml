@@ -1,0 +1,119 @@
+---
+- name: Set requested R version
+  ansible.builtin.set_fact:
+    r_requested_version: "{{ dev_language.version | default(default_r_version) }}"
+
+- name: Require the latest R package-manager release
+  ansible.builtin.assert:
+    that: r_requested_version == 'latest'
+    fail_msg: "Only version 'latest' is supported for R."
+    quiet: true
+
+- name: Set R package names for Linux
+  ansible.builtin.set_fact:
+    r_linux_packages: >-
+      {{ ['r-base', 'r-base-dev'] if ansible_os_family == 'Debian' else
+         (['r'] if ansible_distribution == 'Archlinux' else ['R']) }}
+  when: ansible_system == 'Linux'
+
+- name: Install R on Linux
+  ansible.builtin.package:
+    name: "{{ r_linux_packages }}"
+    state: present
+  become: true
+  when: ansible_system == 'Linux'
+
+- name: Install R on macOS
+  community.general.homebrew:
+    name: r
+    state: present
+  when: ansible_system == 'Darwin'
+
+- name: Check whether R is installed on Windows
+  ansible.windows.win_command: where.exe Rscript.exe
+  register: windows_r_check
+  changed_when: false
+  failed_when: false
+  when: ansible_system == 'Windows'
+
+- name: Install R on Windows with winget
+  ansible.windows.win_command:
+    argv:
+      - winget
+      - install
+      - --id
+      - RProject.R
+      - --exact
+      - --accept-source-agreements
+      - --accept-package-agreements
+  when:
+    - ansible_system == 'Windows'
+    - windows_r_check.rc != 0
+  changed_when: true
+
+- name: Check installed R development tools on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - Rscript
+      - --vanilla
+      - -e
+      - "quit(status = if (requireNamespace('{{ r_tool }}', quietly = TRUE)) 0 else 1)"
+  loop: "{{ dev_language.tools | default(default_r_tools) }}"
+  loop_control:
+    loop_var: r_tool
+    label: "{{ r_tool }}"
+  register: unix_r_tool_checks
+  changed_when: false
+  failed_when: false
+  when: ansible_system in ['Linux', 'Darwin']
+
+- name: Install missing R development tools on Linux or macOS
+  ansible.builtin.command:
+    argv:
+      - Rscript
+      - --vanilla
+      - -e
+      - "install.packages('{{ item.r_tool }}', repos = 'https://cloud.r-project.org')"
+  loop: "{{ unix_r_tool_checks.results | default([]) }}"
+  loop_control:
+    label: "{{ item.r_tool }}"
+  when:
+    - ansible_system in ['Linux', 'Darwin']
+    - item.rc != 0
+  changed_when: true
+
+- name: Check installed R development tools on Windows
+  ansible.windows.win_command:
+    argv:
+      - Rscript.exe
+      - --vanilla
+      - -e
+      - "quit(status = if (requireNamespace('{{ r_tool }}', quietly = TRUE)) 0 else 1)"
+  loop: "{{ dev_language.tools | default(default_r_tools) }}"
+  loop_control:
+    loop_var: r_tool
+    label: "{{ r_tool }}"
+  register: windows_r_tool_checks
+  changed_when: false
+  failed_when: false
+  when: ansible_system == 'Windows'
+
+- name: Install missing R development tools on Windows
+  ansible.windows.win_command:
+    argv:
+      - Rscript.exe
+      - --vanilla
+      - -e
+      - "install.packages('{{ item.r_tool }}', repos = 'https://cloud.r-project.org')"
+  loop: "{{ windows_r_tool_checks.results | default([]) }}"
+  loop_control:
+    label: "{{ item.r_tool }}"
+  when:
+    - ansible_system == 'Windows'
+    - item.rc != 0
+  changed_when: true
+
+- name: Fail on unsupported operating system for R
+  ansible.builtin.fail:
+    msg: "Unsupported operating system for R install: {{ ansible_system }}"
+  when: ansible_system not in ['Linux', 'Darwin', 'Windows']

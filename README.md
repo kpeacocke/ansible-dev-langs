@@ -66,6 +66,17 @@ ansible-playbook site.yml -e '{"dev_languages":[
 Its default tools are dotnet-format and dotnet-outdated-tool. Use
 `tools: []` for the .NET SDK only.
 
+R is supported but optional. Enable the latest package-manager release with:
+
+```bash
+ansible-playbook site.yml -e '{"dev_languages":[
+  {"name":"r","version":"latest"}
+]}'
+```
+
+Its default CRAN tools are pak, renv, lintr, styler, languageserver, and
+testthat. Use `tools: []` to install R without additional packages.
+
 It also includes the latest Go release with `gopls`, Delve, `govulncheck`, and
 gofumpt. Use `tools: []` for a Go runtime only.
 
